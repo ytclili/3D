@@ -72,6 +72,11 @@ const Olympic = () => {
         light.target = cube;
         light.shadow.mapSize.width = 1024;
         light.shadow.mapSize.height = 1024;
+        light.shadow.camera.top = 40;
+      light.shadow.camera.bottom = -40;
+      light.shadow.camera.left = -40;
+      light.shadow.camera.right = 40;
+      
         //...
         scene.add(light);
 
@@ -101,6 +106,7 @@ const Olympic = () => {
                         meshes.push(child);
                         child.material.metalness = 0.1;
                         child.material.roughness = 0.8;
+                        child.receiveShadow = true
                     }
                 }
             });
