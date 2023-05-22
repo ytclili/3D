@@ -11,6 +11,7 @@ import skyTexture from "./images/sky.jpg";
 import snowTexture from "./images/snow.png";
 import treeTexture from "./images/tree.png";
 import flagTexture from "./images/flag.png";
+import { useEffect } from "react";
 
 let container,
   camera,
@@ -111,6 +112,29 @@ const Olympic = () => {
       });
     });
 
+    loader.load(flagModel, function (mesh) {
+      mesh.scene.traverse(function (child) {
+        meshes.push(child);
+        child.castShadow = true;
+        if (child.name === "mesh_0001") {
+          child.material.metalness = 0.1;
+          child.material.roughness = 0.1;
+          child.material.map = new THREE.TextureLoader().load(flagTexture);
+        }
+        if (child.name === "柱体") {
+          child.material.metalness = 0.6;
+          child.material.roughness = 0;
+          // 通过设置 refractionRatio 属性为 1，你将材质的折射率设置为 1。折射率为 1 表示光线在进入该材质时不会发生弯曲，即不会发生折射。
+          child.material.refractionRatio = 1;
+          child.material.color = new THREE.Color(0xeeeeee);
+        }
+      });
+      mesh.scene.rotation.y = Math.PI / 2;
+      mesh.scene.scale.set(4, 4, 4);
+      mesh.scene.position.set(-2, 10, -50);
+      scene.add(mesh.scene);
+    });
+
     controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
   }
@@ -121,7 +145,9 @@ const Olympic = () => {
     controls.update();
   }
 
-  initTree();
+  useEffect(() => {
+    initTree();
+  }, []);
   return <div className="container"></div>;
 };
 
