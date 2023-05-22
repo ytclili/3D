@@ -1,0 +1,18 @@
+{
+    "semi": true,
+    "trailingComma": "all",
+    "tabWidth": 4,
+    "overrides": [
+        {
+            "files": "*.scss",
+            "options": {
+                "tabWidth": 2
+            }
+        }
+    ],
+    "singleQuote": true,
+    "printWidth": 200,
+    "bracketSpacing": true,
+    "requirePragma": false,
+    "singleAttributePerLine": true
+}
