@@ -24,7 +24,7 @@ let container,
     clock = new THREE.Clock(),
     fiveCyclesGroup = new THREE.Group(),
     snowPoints,
-    point = [],
+    entirety = [],
     mixer;
 const Olympic = () => {
     function initTree() {
@@ -48,7 +48,7 @@ const Olympic = () => {
         camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 1000);
         // 创建camera助手
         const cameraHelper = new THREE.CameraHelper(camera);
-        // scene.add(cameraHelper)
+        scene.add(cameraHelper);
 
         camera.position.set(0, 30, 100);
         camera.lookAt(new THREE.Vector3(0, 20, -20));
@@ -65,16 +65,16 @@ const Olympic = () => {
         light = new THREE.DirectionalLight(0xffffff, 1);
 
         light.intensity = 1;
-        light.position.set(16, 36, 8);
+        light.position.set(16, 46, 8);
         light.castShadow = true;
         // 让光源照向立方体
         light.target = cube;
         light.shadow.mapSize.width = 1024;
         light.shadow.mapSize.height = 1024;
-        // light.shadow.camera.top = 40;
-        // light.shadow.camera.bottom = -40;
-        // light.shadow.camera.left = -40;
-        // light.shadow.camera.right = 40;
+        light.shadow.camera.top = 40;
+        light.shadow.camera.bottom = -40;
+        light.shadow.camera.left = -40;
+        light.shadow.camera.right = 40;
 
         //...
         scene.add(light);
@@ -97,7 +97,7 @@ const Olympic = () => {
         manage.onProgress = function (url, loaded, total) {
             if ((loaded / total) * 100 === 100) {
                 // { x: -10, y: 20, z: 20 }相机位置 { x: 0, y: 20, z: 5 } 控制点位置
-                Animations.animateCamera(camera, controls, { x: -10, y: 20, z: 0 }, { x: 0, y: 20, z: -15 }, 3600, () => {});
+                Animations.animateCamera(camera, controls, { x: -15, y: 20, z: 10 }, { x: 0, y: 20, z: -15 }, 3600, () => {});
             } else {
                 console.log(`loading model... ${(loaded / total) * 100}%`);
             }
@@ -181,7 +181,8 @@ const Olympic = () => {
             });
             mesh.scene.rotation.y = -Math.PI / 4;
             mesh.scene.scale.set(24, 24, 24);
-            mesh.scene.position.set(0, 10, -20);
+            mesh.scene.position.set(0, 10, 0);
+            entirety.push({ name: '冰墩墩', scene: mesh.scene });
             scene.add(mesh.scene);
         });
 
@@ -246,14 +247,16 @@ const Olympic = () => {
 
         fiveCycles.forEach((item) => {
             let geometry = new THREE.TorusGeometry(100, 10, 10, 50);
-            let material = new THREE.MeshLambertMaterial({ color: item.color });
+            let material = new THREE.MeshLambertMaterial({ color: item.color, side: THREE.DoubleSide });
             let torus = new THREE.Mesh(geometry, material);
             torus.position.set(item.position.x, item.position.y, item.position.z);
+            torus.castShadow = true;
             meshes.push(torus);
             fiveCyclesGroup.add(torus);
         });
         fiveCyclesGroup.scale.set(0.036, 0.036, 0.036);
         fiveCyclesGroup.position.set(10, 30, -20);
+
         scene.add(fiveCyclesGroup);
 
         controls = new OrbitControls(camera, renderer.domElement);
@@ -330,6 +333,53 @@ const Olympic = () => {
         let time = clock.getDelta();
         mixer && mixer.update(time);
     }
+
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    const rotateObject = (object) => {
+        const rotationDuration = 1000; // 旋转动画的持续时间（毫秒）
+
+        new TWEEN.Tween(object.rotation)
+            .to({ y: object.rotation.y + Math.PI * 2 }, rotationDuration)
+            .easing(TWEEN.Easing.Linear.None) // 缓动函数（线性）
+            .start();
+    };
+
+    const returnEntiretyReflect = (name) => {
+        switch (name) {
+            case '皮肤':
+            case '围脖':
+            case '外壳':
+                return entirety.filter((item) => item.name === '冰墩墩')[0];
+        }
+    };
+
+    //首先，创建了一个Raycaster对象，用于在场景中进行光线投射和碰撞检测。
+    let raycaster = new THREE.Raycaster();
+    // 创建一个Vector2对象mouse，用于存储鼠标点击位置的归一化坐标。
+    let mouse = new THREE.Vector2();
+    const mouseClick = () => {
+        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+        raycaster.setFromCamera(mouse, camera);
+        let intersects = raycaster.intersectObjects(meshes);
+        if (intersects.length > 0) {
+            if (intersects[0].object.name) {
+                for (let i = 0; i < meshes.length; i++) {
+                    if (meshes[i].name === intersects[0].object.name) {
+                        let currentCube = returnEntiretyReflect(meshes[i].name);
+                        rotateObject(currentCube.scene);
+                    }
+                }
+            }
+        }
+    };
+    // 监测哪个物体被点击
+    window.addEventListener('click', mouseClick, false);
 
     useEffect(() => {
         initTree();
