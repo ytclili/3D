@@ -45,10 +45,10 @@ const Olympic = () => {
         scene.background = new THREE.TextureLoader().load(skyTexture);
         scene.fog = new THREE.Fog(0xffffff, 10, 100);
         // ...
-        camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 1000);
+        camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
         // 创建camera助手
         const cameraHelper = new THREE.CameraHelper(camera);
-        scene.add(cameraHelper);
+        // scene.add(cameraHelper);
 
         camera.position.set(0, 30, 100);
         camera.lookAt(new THREE.Vector3(0, 20, -20));
@@ -60,7 +60,7 @@ const Olympic = () => {
         });
         const cube = new THREE.Mesh(cubeGeometry, cubeGeometryMaterial);
         cube.position.set(0, 20, -20);
-        // scene.add(cube);
+        scene.add(cube);
 
         light = new THREE.DirectionalLight(0xffffff, 1);
 
@@ -69,8 +69,8 @@ const Olympic = () => {
         light.castShadow = true;
         // 让光源照向立方体
         light.target = cube;
-        light.shadow.mapSize.width = 1024;
-        light.shadow.mapSize.height = 1024;
+        light.shadow.mapSize.width = 512 * 12;
+        light.shadow.mapSize.height = 512 * 12;
         light.shadow.camera.top = 40;
         light.shadow.camera.bottom = -40;
         light.shadow.camera.left = -40;
@@ -80,10 +80,10 @@ const Olympic = () => {
         scene.add(light);
         // 添加完光之后，再添加光的辅助线
         const lightHelper = new THREE.DirectionalLightHelper(light, 1, 'red');
-        scene.add(lightHelper);
+        // scene.add(lightHelper);
 
         const lightCameraHelper = new THREE.CameraHelper(light.shadow.camera);
-        scene.add(lightCameraHelper);
+        // scene.add(lightCameraHelper);
 
         let ambientLight = new THREE.AmbientLight(0xcfffff, 1);
         ambientLight.intensity = 1;
@@ -151,7 +151,7 @@ const Olympic = () => {
 
         // 创建坐标系辅助对象
         var axesHelper = new THREE.AxesHelper(210);
-        scene.add(axesHelper);
+        // scene.add(axesHelper);
 
         // 冰墩墩
         loader.load(bingdwendwenModel, function (mesh) {
@@ -302,8 +302,19 @@ const Olympic = () => {
         geometry.setAttribute('velocityX', new THREE.BufferAttribute(velocitiesX, 1));
 
         snowPoints = new THREE.Points(geometry, pointsMaterial);
-        snowPoints.position.y = -30;
+        snowPoints.position.y = 0;
         scene.add(snowPoints);
+
+        controls.enablePan = false;
+        controls.enableZoom = false;
+
+        // 垂直旋转角度限制
+        controls.minPolarAngle = 1.4;
+        controls.maxPolarAngle = 1.8;
+
+        // 水平旋转角度限制
+        controls.minAzimuthAngle = -0.8;
+        controls.maxAzimuthAngle = 0;
     }
 
     function updateSnow() {
