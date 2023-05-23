@@ -2,6 +2,7 @@ import * as TWEEN from "../../../node_modules/three/examples/jsm/libs/tween.modu
 
 const Animations = {
     //相机移动实现漫游等动画
+    //  newP: 相机移动到的位置 newT:控制点位置
     animateCamera: (camera, controls, newP, newT, time = 2000, callBack) => {
         var tween = new TWEEN.Tween({
             x1: camera.position.x, // 相机x

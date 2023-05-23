@@ -23,7 +23,7 @@ let container,
     meshes = [],
     clock = new THREE.Clock(),
     fiveCyclesGroup = new THREE.Group(),
-    snowGeometry,
+    snowPoints,
     point = [],
     mixer;
 const Olympic = () => {
@@ -43,14 +43,15 @@ const Olympic = () => {
 
         scene = new THREE.Scene();
         scene.background = new THREE.TextureLoader().load(skyTexture);
-        // scene.fog = new THREE.Fog(0xffffff, 10, 100);
+        scene.fog = new THREE.Fog(0xffffff, 10, 100);
         // ...
-        camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 2000);
+        camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 1000);
         // 创建camera助手
         const cameraHelper = new THREE.CameraHelper(camera);
         // scene.add(cameraHelper)
+
         camera.position.set(0, 30, 100);
-        camera.lookAt(new THREE.Vector3(0, 0, 0));
+        camera.lookAt(new THREE.Vector3(0, 20, -20));
         scene.add(camera);
 
         const cubeGeometry = new THREE.BoxGeometry(0.01, 0.01, 0.01);
@@ -58,29 +59,34 @@ const Olympic = () => {
             color: 0x00ff00,
         });
         const cube = new THREE.Mesh(cubeGeometry, cubeGeometryMaterial);
-        cube.position.set(0, 0, 0);
-        scene.add(cube);
+        cube.position.set(0, 20, -20);
+        // scene.add(cube);
 
         light = new THREE.DirectionalLight(0xffffff, 1);
-        // 创建light助手
-        const lightHelper = new THREE.DirectionalLightHelper(light);
-        scene.add(lightHelper);
+
         light.intensity = 1;
-        light.position.set(16, 16, 8);
+        light.position.set(16, 36, 8);
         light.castShadow = true;
         // 让光源照向立方体
         light.target = cube;
         light.shadow.mapSize.width = 1024;
         light.shadow.mapSize.height = 1024;
-        light.shadow.camera.top = 40;
-      light.shadow.camera.bottom = -40;
-      light.shadow.camera.left = -40;
-      light.shadow.camera.right = 40;
-      
+        // light.shadow.camera.top = 40;
+        // light.shadow.camera.bottom = -40;
+        // light.shadow.camera.left = -40;
+        // light.shadow.camera.right = 40;
+
         //...
         scene.add(light);
+        // 添加完光之后，再添加光的辅助线
+        const lightHelper = new THREE.DirectionalLightHelper(light, 1, 'red');
+        scene.add(lightHelper);
+
+        const lightCameraHelper = new THREE.CameraHelper(light.shadow.camera);
+        scene.add(lightCameraHelper);
 
         let ambientLight = new THREE.AmbientLight(0xcfffff, 1);
+        ambientLight.intensity = 1;
         scene.add(ambientLight);
 
         const manage = new THREE.LoadingManager();
@@ -90,7 +96,8 @@ const Olympic = () => {
         };
         manage.onProgress = function (url, loaded, total) {
             if ((loaded / total) * 100 === 100) {
-                Animations.animateCamera(camera, controls, { x: 0, y: -1, z: 20 }, { x: 0, y: 0, z: 5 }, 3600, () => {});
+                // { x: -10, y: 20, z: 20 }相机位置 { x: 0, y: 20, z: 5 } 控制点位置
+                Animations.animateCamera(camera, controls, { x: -10, y: 20, z: 0 }, { x: 0, y: 20, z: -15 }, 3600, () => {});
             } else {
                 console.log(`loading model... ${(loaded / total) * 100}%`);
             }
@@ -106,7 +113,7 @@ const Olympic = () => {
                         meshes.push(child);
                         child.material.metalness = 0.1;
                         child.material.roughness = 0.8;
-                        child.receiveShadow = true
+                        child.receiveShadow = true;
                     }
                 }
             });
@@ -131,7 +138,7 @@ const Olympic = () => {
             });
             mesh.scene.rotation.y = Math.PI / 2;
             mesh.scene.scale.set(4, 4, 4);
-            mesh.scene.position.set(-2, 10, -50);
+            mesh.scene.position.set(5, 20, -5);
 
             //动画
             let meshAnimation = mesh.animations[0];
@@ -142,15 +149,39 @@ const Olympic = () => {
             scene.add(mesh.scene);
         });
 
+        // 创建坐标系辅助对象
+        var axesHelper = new THREE.AxesHelper(210);
+        scene.add(axesHelper);
+
         // 冰墩墩
         loader.load(bingdwendwenModel, function (mesh) {
             mesh.scene.traverse(function (child) {
                 meshes.push(child);
                 child.castShadow = true;
+                if (child.name === '皮肤') {
+                    child.material.metalness = 0.3;
+                    child.material.roughness = 0.8;
+                }
+                if (child.name == '外壳') {
+                    child.material.transparent = true;
+                    child.material.opacity = 0.4;
+                    child.material.refractionRatio = 1.6;
+                    child.material.metalness = 0.4;
+                    child.material.roughness = 0;
+                    child.material.envMap = new THREE.TextureLoader().load(skyTexture);
+                    child.material.envMapIntensity = 1;
+                }
+
+                if (child.name === '围脖') {
+                    child.material.transparent = true;
+                    child.material.opacity = 0.6;
+                    child.material.metalness = 0.4;
+                    child.material.roughness = 0.6;
+                }
             });
             mesh.scene.rotation.y = -Math.PI / 4;
             mesh.scene.scale.set(24, 24, 24);
-            mesh.scene.position.set(0, 3, 20);
+            mesh.scene.position.set(0, 10, -20);
             scene.add(mesh.scene);
         });
 
@@ -160,7 +191,7 @@ const Olympic = () => {
                 meshes.push(child);
                 child.castShadow = true;
             });
-            mesh.scene.position.set(0, 8, 10);
+            mesh.scene.position.set(-15, 12, -20);
             mesh.scene.scale.set(12, 12, 12);
             scene.add(mesh.scene);
         });
@@ -186,19 +217,21 @@ const Olympic = () => {
         });
         loader.load(treeModel, (mesh) => {
             mesh.scene.traverse((child) => {
+                meshes.push(child);
                 child.material = treeMaterial;
-                child.customDepthMaterial = treeCustomDepthMaterial;
+                child.custromMaterial = treeCustomDepthMaterial;
             });
-            mesh.scene.position.set(14, 10, 0);
+            mesh.scene.position.set(14, 10, -30);
             mesh.scene.scale.set(16, 16, 16);
             scene.add(mesh.scene);
 
             let tree2 = mesh.scene.clone();
-            tree2.position.set(-14, 10, 0);
+            tree2.position.set(16, 10, -15);
+            tree2.scale.set(18, 18, 18);
             scene.add(tree2);
 
             let tree3 = mesh.scene.clone();
-            tree3.position.set(-24, 10, 0);
+            tree3.position.set(0, 10, -30);
             scene.add(tree3);
         });
 
@@ -220,7 +253,7 @@ const Olympic = () => {
             fiveCyclesGroup.add(torus);
         });
         fiveCyclesGroup.scale.set(0.036, 0.036, 0.036);
-        fiveCyclesGroup.position.set(20, 20, 20);
+        fiveCyclesGroup.position.set(10, 30, -20);
         scene.add(fiveCyclesGroup);
 
         controls = new OrbitControls(camera, renderer.domElement);
@@ -228,70 +261,72 @@ const Olympic = () => {
 
         // 雪花
         // 创建雪花
-let texture = new THREE.TextureLoader().load(snowTexture);
-let geometry = new THREE.BufferGeometry();
-let pointsMaterial = new THREE.PointsMaterial({
-  size: 1,
-  transparent: true,
-  opacity: 0.8,
-  map: texture,
-  blending: THREE.AdditiveBlending,
-  sizeAttenuation: true,
-  depthTest: false
-});
+        let texture = new THREE.TextureLoader().load(snowTexture);
+        let geometry = new THREE.BufferGeometry();
+        let pointsMaterial = new THREE.PointsMaterial({
+            size: 1,
+            transparent: true,
+            opacity: 0.8,
+            map: texture,
+            blending: THREE.AdditiveBlending,
+            sizeAttenuation: true,
+            depthTest: false,
+        });
 
-let range = 100;
-let numParticles = 1500;
+        let range = 100;
+        let numParticles = 1500;
 
-let positions = new Float32Array(numParticles * 3);
-let velocitiesY = new Float32Array(numParticles);
-let velocitiesX = new Float32Array(numParticles);
+        let positions = new Float32Array(numParticles * 3);
+        let velocitiesY = new Float32Array(numParticles);
+        let velocitiesX = new Float32Array(numParticles);
 
-for (let i = 0; i < numParticles; i++) {
-  let x = Math.random() * range - range / 2;
-  let y = Math.random() * range * 1.5;
-  let z = Math.random() * range - range / 2;
-  
-  let index = i * 3;
-  positions[index] = x;
-  positions[index + 1] = y;
-  positions[index + 2] = z;
-  
-  velocitiesY[i] = 0.1 + Math.random() / 3;
-  velocitiesX[i] = (Math.random() - 0.5) / 3;
-}
+        for (let i = 0; i < numParticles; i++) {
+            let x = Math.random() * range - range / 2;
+            let y = Math.random() * range * 1.5;
+            let z = Math.random() * range - range / 2;
 
-geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-geometry.setAttribute('velocityY', new THREE.BufferAttribute(velocitiesY, 1));
-geometry.setAttribute('velocityX', new THREE.BufferAttribute(velocitiesX, 1));
+            let index = i * 3;
+            positions[index] = x;
+            positions[index + 1] = y;
+            positions[index + 2] = z;
 
-let points = new THREE.Points(geometry, pointsMaterial);
-points.position.y = -30;
-scene.add(points);
+            velocitiesY[i] = 0.1 + Math.random() / 3;
+            velocitiesX[i] = (Math.random() - 0.5) / 3;
+        }
+
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        geometry.setAttribute('velocityY', new THREE.BufferAttribute(velocitiesY, 1));
+        geometry.setAttribute('velocityX', new THREE.BufferAttribute(velocitiesX, 1));
+
+        snowPoints = new THREE.Points(geometry, pointsMaterial);
+        snowPoints.position.y = -30;
+        scene.add(snowPoints);
     }
 
     function updateSnow() {
-        const positions = snowGeometry.getAttribute('position').array;
-        const velocities = snowGeometry.getAttribute('velocity').array;
-      
-        for (let i = 0; i < positions.length; i += 3) {
-          positions[i + 1] -= velocities[i + 1];
-          positions[i] -= velocities[i];
-      
-          if (positions[i + 1] <= 0) positions[i + 1] = range;
-          if (positions[i] <= -range / 2 || positions[i] >= range / 2) velocities[i] = -velocities[i];
+        let positions = snowPoints.geometry.getAttribute('position').array;
+        let velocitiesY = snowPoints.geometry.getAttribute('velocityY').array;
+        let velocitiesX = snowPoints.geometry.getAttribute('velocityX').array;
+
+        for (let i = 0; i < 1500; i++) {
+            let index = i * 3;
+            positions[index + 1] -= velocitiesY[i];
+            positions[index] -= velocitiesX[i];
+
+            if (positions[index + 1] <= 0) positions[index + 1] = 60;
+            if (positions[index] <= -20 || positions[index] >= 20) velocitiesX[i] *= -1;
         }
-      
-        snowGeometry.getAttribute('position').needsUpdate = true;
-      }
+        snowPoints.geometry.attributes.position.needsUpdate = true;
+    }
 
     function animate() {
         requestAnimationFrame(animate);
         renderer.render(scene, camera);
         controls.update();
+        fiveCyclesGroup && (fiveCyclesGroup.rotation.y += 0.01);
 
-        // TWEEN && TWEEN.update();
-        // updateSnow()
+        TWEEN && TWEEN.update();
+        updateSnow();
         let time = clock.getDelta();
         mixer && mixer.update(time);
     }
