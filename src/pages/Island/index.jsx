@@ -241,33 +241,29 @@ const Island = () => {
             const delta = clock.getDelta();
             mixers && mixers.forEach((mixer) => mixer.update(delta));
             TWEEN && TWEEN.update();
-            // if (isReady) {
-            console.log('isReady');
-            for (let point of points) {
-                // 获取2D屏幕位置
-                const screenPosition = point.position.clone();
-                // 设置光线的起点和方向  比如 眼睛就是摄像机 数据和目标对象就是方向
-                raycaster.setFromCamera(screenPosition, camera);
-                // 检测场景里面所有的对象是否有视线遮挡
-                const intersects = raycaster.intersectObjects(scene.children, true);
-                //   可以将点的三维坐标转换为屏幕上的二维坐标，以便在渲染场景时将该点绘制在正确的屏幕位置上。这通常用于在屏幕上绘制交互元素、进行鼠标拾取操作或其他需要将三维坐标转换为屏幕坐标的场景处理
-                screenPosition.project(camera);
-                if (intersects.length === 0) {
-                    point.element.classList.add('visible');
-                    console.log('aaaaa');
-                } else {
-                    const intersectsDistance = intersects[0].distance;
-                    const pointDistance = point.position.distanceTo(camera.position);
-                    console.log('bbbb');
-                    // 如果射线范围内 数字前面有遮挡物则隐藏数字 否则显示数字
-                    intersectsDistance > pointDistance ? point.element.classList.add('visible') : point.element.classList.remove('visible');
+            if (isReady) {
+                for (let point of points) {
+                    // 获取2D屏幕位置
+                    const screenPosition = point.position.clone();
+                    // 设置光线的起点和方向  比如 眼睛就是摄像机 数据和目标对象就是方向
+                    raycaster.setFromCamera(screenPosition, camera);
+                    // 检测场景里面所有的对象是否有视线遮挡
+                    const intersects = raycaster.intersectObjects(scene.children, true);
+                    //   可以将点的三维坐标转换为屏幕上的二维坐标，以便在渲染场景时将该点绘制在正确的屏幕位置上。这通常用于在屏幕上绘制交互元素、进行鼠标拾取操作或其他需要将三维坐标转换为屏幕坐标的场景处理
+                    screenPosition.project(camera);
+                    if (intersects.length === 0) {
+                        point.element.classList.add('visible');
+                    } else {
+                        const intersectsDistance = intersects[0].distance;
+                        const pointDistance = point.position.distanceTo(camera.position);
+                        // 如果射线范围内 数字前面有遮挡物则隐藏数字 否则显示数字
+                        intersectsDistance > pointDistance ? point.element.classList.add('visible') : point.element.classList.remove('visible');
+                    }
+                    const translateX = screenPosition.x * window.innerWidth * 0.5;
+                    const translateY = -screenPosition.y * window.innerHeight * 0.5;
+                    point.element.style.transform = `translate(${translateX}px, ${translateY}px)`;
                 }
-                const translateX = screenPosition.x * window.innerWidth * 0.5;
-                const translateY = -screenPosition.y * window.innerHeight * 0.5;
-                console.log(translateX);
-                point.element.style.transform = `translate(${translateX}px, ${translateY}px)`;
             }
-            // }
         };
         animate();
     };
