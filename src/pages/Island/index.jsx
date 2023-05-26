@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
-import React, { useEffect, useRef } from 'react';
-import Stats from 'three/examples/jsm/libs/stats.module';
+import React, { useEffect, useState } from 'react';
+// import Stats from 'three/examples/jsm/libs/stats.module';
 import { Water } from 'three/examples/jsm/objects/Water';
 import { Sky } from 'three/examples/jsm/objects/Sky';
 import waterTexture from './images/waternormals.jpg';
@@ -13,12 +13,15 @@ import flamingoModel from './models/flamingo.glb';
 import vertexShader from './shaders/rainbow/vertex.glsl';
 import fragmentShader from './shaders/rainbow/fragment.glsl';
 import * as TWEEN from '../../../node_modules/three/examples/jsm/libs/tween.module';
-import Animations from '../../assets/utils/Animations'
-
-import './index.css';
+import Animations from '../../assets/utils/Animations';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
+import Loading from '../../component/Loading';
+
+import './index.scss';
 
 const Island = () => {
+    const [loadingProcess, setLoadingProcess] = useState(0);
+    const [isReady, setIsReady] = useState(false);
     const mixers = [];
     const clock = new THREE.Clock();
     useEffect(() => {
@@ -36,12 +39,12 @@ const Island = () => {
         const scene = new THREE.Scene();
 
         const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 1, 20000);
-        camera.position.set(0, 40, 140);
+        camera.position.set(0, 600, 1600);
         scene.add(camera);
 
         // 性能检测
-        const stats = new Stats();
-        document.body.appendChild(stats.dom);
+        // const stats = new Stats();
+        // document.body.appendChild(stats.dom);
         let controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
         controls.enablePan = false;
@@ -51,7 +54,7 @@ const Island = () => {
 
         const axesHelper = new THREE.AxesHelper(500);
         axesHelper.position.set(0, 20, 0);
-        scene.add(axesHelper);
+        // scene.add(axesHelper);
 
         // 添加环境光  环境光的作用并不是照亮整个canvas而是照亮里面的物体 不要以为添加了环境光整个canvas就会变亮
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
@@ -82,9 +85,16 @@ const Island = () => {
         pointLight.add(lensflare);
         scene.add(pointLight);
 
-        //
         const manage = new THREE.LoadingManager();
-        manage.onLoad = () => {};
+        manage.onProgress = async (url, loaded, total) => {
+            if (Math.floor((loaded / total) * 100) === 100) {
+                setLoadingProcess(Math.floor((loaded / total) * 100));
+                setIsReady(true);
+                Animations.animateCamera(camera, controls, new THREE.Vector3(0, 40, 140), { x: 0, y: 0, z: 0 }, 2000, () => {});
+            } else {
+                setLoadingProcess(Math.floor((loaded / total) * 100));
+            }
+        };
 
         // 岛屿
         const loader = new GLTFLoader(manage);
@@ -96,7 +106,7 @@ const Island = () => {
                 }
             });
             mesh.scene.scale.set(33, 33, 33);
-            scene.position.set(0, -2, 0);
+            mesh.scene.position.set(0, -2, 0);
             scene.add(mesh.scene);
         });
 
@@ -112,12 +122,11 @@ const Island = () => {
             sunColor: 0xffffff,
             waterColor: 0x0072ff,
             distortionScale: 4,
-
             fog: scene.fog !== undefined,
         });
 
         water.rotation.x = -Math.PI / 2;
-        water.position.y = 2;
+        // water.position.y = 2;
         scene.add(water);
 
         // 天空
@@ -141,7 +150,7 @@ const Island = () => {
         water.material.uniforms['sunDirection'].value.copy(sun).normalize();
         scene.environment = pmremGenerator.fromScene(sky).texture;
 
-        //彩虹
+        //彩虹 ShaderMaterial 着色器材质
         const rainbowMaterial = new THREE.ShaderMaterial({
             side: THREE.DoubleSide,
             uniforms: {},
@@ -197,22 +206,21 @@ const Island = () => {
             },
         ];
 
-        document.querySelectorAll(".point").forEach((point, index) => {
+        document.querySelectorAll('.point').forEach((point, index) => {
             point.addEventListener('click', (event) => {
-                let className  = event.target.classList[event.target.classList.length - 1]
-                console.log(className)
-                switch(className) {
-                    case 'label-0': 
-                        return Animations.animateCamera(camera, controls,new THREE.Vector3  (-15, 86, 60), new THREE.Vector3(0, 0, 0), 1000,()=>{});
-                        case 'label-1': 
-                        return Animations.animateCamera(camera, controls,new THREE.Vector3  (-20,10,60), new THREE.Vector3(0, 0, 0), 1000,()=>{});
-                        case 'label-2': 
-                        return Animations.animateCamera(camera, controls,new THREE.Vector3  (30,10,100), new THREE.Vector3(0, 0, 0), 1000,()=>{});
-                        case 'label-3': 
-                      default:
-                        return Animations.animateCamera(camera, controls,new THREE.Vector3  (0,40,140), new THREE.Vector3(0, 0, 0), 1000,()=>{});
+                let className = event.target.classList[event.target.classList.length - 1];
+                switch (className) {
+                    case 'label-0':
+                        return Animations.animateCamera(camera, controls, new THREE.Vector3(-15, 86, 60), new THREE.Vector3(0, 0, 0), 1000, () => {});
+                    case 'label-1':
+                        return Animations.animateCamera(camera, controls, new THREE.Vector3(-20, 10, 60), new THREE.Vector3(0, 0, 0), 1000, () => {});
+                    case 'label-2':
+                        return Animations.animateCamera(camera, controls, new THREE.Vector3(30, 10, 100), new THREE.Vector3(0, 0, 0), 1000, () => {});
+                    case 'label-3':
+                    default:
+                        return Animations.animateCamera(camera, controls, new THREE.Vector3(0, 40, 140), new THREE.Vector3(0, 0, 0), 1000, () => {});
                 }
-            })
+            });
         });
 
         window.addEventListener('resize', () => {
@@ -223,33 +231,43 @@ const Island = () => {
 
         const animate = () => {
             requestAnimationFrame(animate);
-            stats && stats.update();
+            const timer = Date.now() * 0.0005;
+            // 让相机有一个起伏的过程
+            camera && (camera.position.y += Math.sin(timer) * 0.01);
+            water.material.uniforms['time'].value += 1.0 / 60.0;
+            // stats && stats.update();
             controls && controls.update();
             renderer.render(scene, camera);
             const delta = clock.getDelta();
             mixers && mixers.forEach((mixer) => mixer.update(delta));
             TWEEN && TWEEN.update();
-            for(let point of points) {
-                   // 获取2D屏幕位置
-          const screenPosition = point.position.clone();
-          // 设置光线的起点和方向  比如 眼睛就是摄像机 数据和目标对象就是方向
-          raycaster.setFromCamera(screenPosition, camera);
-          // 检测场景里面所有的对象是否有视线遮挡
-          const intersects = raycaster.intersectObjects(scene.children, true);
-        //   可以将点的三维坐标转换为屏幕上的二维坐标，以便在渲染场景时将该点绘制在正确的屏幕位置上。这通常用于在屏幕上绘制交互元素、进行鼠标拾取操作或其他需要将三维坐标转换为屏幕坐标的场景处理
-          screenPosition.project(camera);
-          if(intersects.length === 0){
-            point.element.classList.add("visible")
-          }else {
-            const intersectsDistance = intersects[0].distance;
-            const pointDistance = point.position.distanceTo(camera.position);
-            // 如果射线范围内 数字前面有遮挡物则隐藏数字 否则显示数字
-            intersectsDistance > pointDistance ? point.element.classList.add("visible") : point.element.classList.remove("visible")
-          }
-          const translateX = screenPosition.x * window.innerWidth * 0.5;
-            const translateY =- screenPosition.y * window.innerHeight * 0.5;
-            point.element.style.transform = `translate(${translateX}px, ${translateY}px)`;
+            // if (isReady) {
+            console.log('isReady');
+            for (let point of points) {
+                // 获取2D屏幕位置
+                const screenPosition = point.position.clone();
+                // 设置光线的起点和方向  比如 眼睛就是摄像机 数据和目标对象就是方向
+                raycaster.setFromCamera(screenPosition, camera);
+                // 检测场景里面所有的对象是否有视线遮挡
+                const intersects = raycaster.intersectObjects(scene.children, true);
+                //   可以将点的三维坐标转换为屏幕上的二维坐标，以便在渲染场景时将该点绘制在正确的屏幕位置上。这通常用于在屏幕上绘制交互元素、进行鼠标拾取操作或其他需要将三维坐标转换为屏幕坐标的场景处理
+                screenPosition.project(camera);
+                if (intersects.length === 0) {
+                    point.element.classList.add('visible');
+                    console.log('aaaaa');
+                } else {
+                    const intersectsDistance = intersects[0].distance;
+                    const pointDistance = point.position.distanceTo(camera.position);
+                    console.log('bbbb');
+                    // 如果射线范围内 数字前面有遮挡物则隐藏数字 否则显示数字
+                    intersectsDistance > pointDistance ? point.element.classList.add('visible') : point.element.classList.remove('visible');
+                }
+                const translateX = screenPosition.x * window.innerWidth * 0.5;
+                const translateY = -screenPosition.y * window.innerHeight * 0.5;
+                console.log(translateX);
+                point.element.style.transform = `translate(${translateX}px, ${translateY}px)`;
             }
+            // }
         };
         animate();
     };
