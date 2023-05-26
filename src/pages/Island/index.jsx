@@ -12,6 +12,8 @@ import islandModel from './models/island.glb';
 import flamingoModel from './models/flamingo.glb';
 import vertexShader from './shaders/rainbow/vertex.glsl';
 import fragmentShader from './shaders/rainbow/fragment.glsl';
+import * as TWEEN from '../../../node_modules/three/examples/jsm/libs/tween.module';
+import Animations from '../../assets/utils/Animations'
 
 import './index.css';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
@@ -38,7 +40,6 @@ const Island = () => {
         scene.add(camera);
 
         // 性能检测
-        console.log(Stats());
         const stats = new Stats();
         document.body.appendChild(stats.dom);
         let controls = new OrbitControls(camera, renderer.domElement);
@@ -49,6 +50,7 @@ const Island = () => {
         controls.maxDistance = 1200;
 
         const axesHelper = new THREE.AxesHelper(500);
+        axesHelper.position.set(0, 20, 0);
         scene.add(axesHelper);
 
         // 添加环境光  环境光的作用并不是照亮整个canvas而是照亮里面的物体 不要以为添加了环境光整个canvas就会变亮
@@ -136,6 +138,8 @@ const Island = () => {
         const theta = THREE.MathUtils.degToRad(180);
         sun.setFromSphericalCoords(1, phi, theta);
         sky.material.uniforms['sunPosition'].value.copy(sun);
+        water.material.uniforms['sunDirection'].value.copy(sun).normalize();
+        scene.environment = pmremGenerator.fromScene(sky).texture;
 
         //彩虹
         const rainbowMaterial = new THREE.ShaderMaterial({
@@ -153,7 +157,6 @@ const Island = () => {
 
         // 鸟
         loader.load(flamingoModel, (mesh) => {
-            console.log(mesh);
             mesh.scene.scale.set(0.35, 0.35, 0.35);
             mesh.scene.position.set(-100, 80, -300);
             scene.add(mesh.scene);
@@ -194,6 +197,24 @@ const Island = () => {
             },
         ];
 
+        document.querySelectorAll(".point").forEach((point, index) => {
+            point.addEventListener('click', (event) => {
+                let className  = event.target.classList[event.target.classList.length - 1]
+                console.log(className)
+                switch(className) {
+                    case 'label-0': 
+                        return Animations.animateCamera(camera, controls,new THREE.Vector3  (-15, 86, 60), new THREE.Vector3(0, 0, 0), 1000,()=>{});
+                        case 'label-1': 
+                        return Animations.animateCamera(camera, controls,new THREE.Vector3  (-20,10,60), new THREE.Vector3(0, 0, 0), 1000,()=>{});
+                        case 'label-2': 
+                        return Animations.animateCamera(camera, controls,new THREE.Vector3  (30,10,100), new THREE.Vector3(0, 0, 0), 1000,()=>{});
+                        case 'label-3': 
+                      default:
+                        return Animations.animateCamera(camera, controls,new THREE.Vector3  (0,40,140), new THREE.Vector3(0, 0, 0), 1000,()=>{});
+                }
+            })
+        });
+
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
@@ -207,6 +228,28 @@ const Island = () => {
             renderer.render(scene, camera);
             const delta = clock.getDelta();
             mixers && mixers.forEach((mixer) => mixer.update(delta));
+            TWEEN && TWEEN.update();
+            for(let point of points) {
+                   // 获取2D屏幕位置
+          const screenPosition = point.position.clone();
+          // 设置光线的起点和方向  比如 眼睛就是摄像机 数据和目标对象就是方向
+          raycaster.setFromCamera(screenPosition, camera);
+          // 检测场景里面所有的对象是否有视线遮挡
+          const intersects = raycaster.intersectObjects(scene.children, true);
+        //   可以将点的三维坐标转换为屏幕上的二维坐标，以便在渲染场景时将该点绘制在正确的屏幕位置上。这通常用于在屏幕上绘制交互元素、进行鼠标拾取操作或其他需要将三维坐标转换为屏幕坐标的场景处理
+          screenPosition.project(camera);
+          if(intersects.length === 0){
+            point.element.classList.add("visible")
+          }else {
+            const intersectsDistance = intersects[0].distance;
+            const pointDistance = point.position.distanceTo(camera.position);
+            // 如果射线范围内 数字前面有遮挡物则隐藏数字 否则显示数字
+            intersectsDistance > pointDistance ? point.element.classList.add("visible") : point.element.classList.remove("visible")
+          }
+          const translateX = screenPosition.x * window.innerWidth * 0.5;
+            const translateY =- screenPosition.y * window.innerHeight * 0.5;
+            point.element.style.transform = `translate(${translateX}px, ${translateY}px)`;
+            }
         };
         animate();
     };
