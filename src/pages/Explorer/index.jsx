@@ -9,13 +9,20 @@ import { img2matrix, randnum } from '../../assets/utils/utils';
 import CANNON from 'cannon';
 // import CannonHelper from './scripts/CannonHelper';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
+import JoyStick from './scripts/JoyStick';
 
 const Explorer = () => {
     useEffect(() => {
         init();
     }, []);
     const init = () => {
+        const clock = new THREE.Clock();
         const shelterPosition = { x: 93, y: -2, z: 25.5 };
+        const playPosition = {
+            x: 0,
+            y: -0.05,
+            z: 0,
+        };
         const renderer = new THREE.WebGLRenderer({
             canvas: document.querySelector('.explorer canvas'),
             alpha: true,
@@ -29,7 +36,7 @@ const Explorer = () => {
         scene.background = new THREE.Color(0x000000);
 
         const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100000);
-        camera.position.set(0, 10, 0);
+        camera.position.set(0, 10, 10);
         scene.add(camera);
 
         const controls = new OrbitControls(camera, renderer.domElement);
@@ -92,8 +99,8 @@ const Explorer = () => {
 
         // 基地
         const gltfLoader = new GLTFLoader();
-        const shelterGeometry = new THREE.BoxBufferGeometry(0.15, 2, 0.15);
-        shelterGeometry.applyMatrix4(new THREE.Matrix4().makeTranslation(0, 1, 0));
+        const shelterGeometry = new THREE.BoxGeometry(0.15, 2, 0.15);
+        shelterGeometry.translate(0, 1, 0); // 移动几何体的位置
         const shelterLocation = new THREE.Mesh(
             shelterGeometry,
             new THREE.MeshNormalMaterial({
@@ -122,6 +129,69 @@ const Explorer = () => {
         shelterLight.target = shelterLocation;
         scene.add(shelterLight);
 
+        // target 有啥用？
+        var geometry = new THREE.BoxBufferGeometry(0.5, 1, 0.5);
+        geometry.applyMatrix4(new THREE.Matrix4().makeTranslation(0, 0.5, 0));
+        const target = new THREE.Mesh(
+            geometry,
+            new THREE.MeshNormalMaterial({
+                transparent: true,
+                opacity: 0,
+            }),
+        );
+        scene.add(target);
+
+        //狐狸
+        let mixers = [],
+            clip1,
+            clip2;
+        const foxLoader = gltfLoader.load(foxModel, (mesh) => {
+            scene.add(mesh.scene);
+            mesh.scene.traverse((child) => {
+                if (child.isMesh) {
+                    child.castShadow = true;
+                    child.material.side = THREE.DoubleSide;
+                }
+            });
+            let player = mesh.scene;
+            player.position.set(playPosition.x, playPosition.y, playPosition.z);
+            player.scale.set(0.08, 0.08, 0.08);
+            target.add(player);
+            var mixer = new THREE.AnimationMixer(player);
+            clip1 = mixer.clipAction(mesh.animations[0]);
+            clip2 = mixer.clipAction(mesh.animations[1]);
+            clip2.timeScale = 1.6;
+            mixers.push(mixer);
+        });
+
+        // 轮盘控制器
+        const setUpController = {
+            forward: 0,
+            turn: 0,
+        };
+        new JoyStick({
+            onMove: (forward, turn) => {
+                setUpController.forward = forward;
+                setUpController.turn = -turn;
+            },
+        });
+
+        const updateDrive = (forward = setUpController.forward, turn = setUpController.turn) => {
+            let maxSteerVal = 0.05;
+            let maxForce = 0.15;
+            let force = maxForce * forward;
+            let steer = maxSteerVal * turn;
+            if (forward !== 0) {
+                target.translateZ(force);
+                clip2 && clip2.play();
+                clip1 && clip1.stop();
+            } else {
+                clip2 && clip2.stop();
+                clip1 && clip1.play();
+            }
+            target.rotateY(steer);
+        };
+
         window.addEventListener('resize', () => {
             renderer.setSize(window.innerWidth, window.innerHeight);
             camera.updateProjectionMatrix();
@@ -132,6 +202,8 @@ const Explorer = () => {
             requestAnimationFrame(animation);
             controls.update();
             renderer.render(scene, camera);
+            mixers && mixers.forEach((mixer) => mixer.update(clock.getDelta()));
+            updateDrive();
         }
         animation();
     };
