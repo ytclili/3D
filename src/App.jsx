@@ -10,11 +10,11 @@ function App() {
                 element={<Olympic />}
             />
             <Route
-                path="/explorer"
+                path="/"
                 element={<Explorer />}
             />
             <Route
-                path="/"
+                path="/island"
                 element={<Island />}
             />
         </Routes>

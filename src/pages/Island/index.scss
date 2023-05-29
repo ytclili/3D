@@ -69,9 +69,8 @@ canvas {
 
 }
 
-.text:hover .text {
+.label:hover + .text {
     opacity: 1;
-
 }
 
 

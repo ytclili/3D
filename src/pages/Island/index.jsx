@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 // import Stats from 'three/examples/jsm/libs/stats.module';
 import { Water } from 'three/examples/jsm/objects/Water';
 import { Sky } from 'three/examples/jsm/objects/Sky';
@@ -8,7 +8,8 @@ import waterTexture from './images/waternormals.jpg';
 import { Lensflare, LensflareElement } from 'three/examples/jsm/objects/Lensflare.js';
 import lensflareTexture0 from './images/lensflare0.png';
 import lensflareTexture1 from './images/lensflare1.png';
-import islandModel from './models/island.glb';
+// import islandModel from './models/island.glb';
+import islandModel1 from './models/夏日情岛.glb';
 import flamingoModel from './models/flamingo.glb';
 import vertexShader from './shaders/rainbow/vertex.glsl';
 import fragmentShader from './shaders/rainbow/fragment.glsl';
@@ -16,16 +17,24 @@ import * as TWEEN from '../../../node_modules/three/examples/jsm/libs/tween.modu
 import Animations from '../../assets/utils/Animations';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import Loading from '../../component/Loading';
+import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
+import audioSrc from './audio/lettingGo.ogg'
 
 import './index.scss';
 
 const Island = () => {
     const [loadingProcess, setLoadingProcess] = useState(0);
-    const [isReady, setIsReady] = useState(false);
+    let isReady = useRef(false);
     const mixers = [];
+    const meshes = []
     const clock = new THREE.Clock();
     useEffect(() => {
         init();
+        // window.addEventListener('click', () => {
+        //     console.log("我执行了")
+        //    createMusic()
+          
+        //   });
     }, []);
 
     const init = () => {
@@ -89,17 +98,30 @@ const Island = () => {
         manage.onProgress = async (url, loaded, total) => {
             if (Math.floor((loaded / total) * 100) === 100) {
                 setLoadingProcess(Math.floor((loaded / total) * 100));
-                setIsReady(true);
-                Animations.animateCamera(camera, controls, new THREE.Vector3(0, 40, 140), { x: 0, y: 0, z: 0 }, 2000, () => {});
+                Animations.animateCamera(camera, controls, new THREE.Vector3(0, 40, 140), { x: 0, y: 0, z: 0 }, 4000, () => {
+                isReady.current = true;
+
+                });
+
             } else {
                 setLoadingProcess(Math.floor((loaded / total) * 100));
             }
         };
 
+        let money = null;
+            // 使用 dracoLoader 加载用blender压缩过的模型
+    const dracoLoader = new DRACOLoader();
+    dracoLoader.setDecoderPath('libs/draco/');
         // 岛屿
         const loader = new GLTFLoader(manage);
-        loader.load(islandModel, (mesh) => {
+        loader.setDRACOLoader(dracoLoader);
+        // blender进行了压缩 用dracoLoader加载解压
+        loader.load(islandModel1, (mesh) => {
             mesh.scene.traverse((child) => {
+                meshes.push(child)
+                if(child.name === "金币"){
+                    money = child
+                }
                 if (child.isMesh) {
                     child.material.roughness = 0.5;
                     child.material.metalness = 0.5;
@@ -115,7 +137,7 @@ const Island = () => {
         const water = new Water(oceanGeometry, {
             textureWidth: 512,
             textureHeight: 512,
-            waterNormals: new THREE.TextureLoader(manage).load(waterTexture, function (texture) {
+            waterNormals: new THREE.TextureLoader().load(waterTexture, function (texture) {
                 texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
             }),
             sunDirection: new THREE.Vector3(),
@@ -220,8 +242,28 @@ const Island = () => {
                     default:
                         return Animations.animateCamera(camera, controls, new THREE.Vector3(0, 40, 140), new THREE.Vector3(0, 0, 0), 1000, () => {});
                 }
+
             });
+            event.stopPropagation();
         });
+
+        const mouse = new THREE.Vector2();
+        const mouseClick = () => {
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+            raycaster.setFromCamera(mouse, camera);
+            let intersects = raycaster.intersectObjects(meshes);
+            if (intersects.length > 0) {
+                if (intersects[0].object.name) {
+                    console.log(intersects[0].object.name  )
+                    if(intersects[0].object.name === "播放"){
+                        createMusic()
+                    }
+                }
+            }
+        };
+        // 监测哪个物体被点击
+        window.addEventListener('click', mouseClick, false);
 
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
@@ -229,9 +271,14 @@ const Island = () => {
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
+
         const animate = () => {
             requestAnimationFrame(animate);
             const timer = Date.now() * 0.0005;
+            if(money){
+                money.rotation.y +=  0.1;
+                money.rotation.x+=  0.1;
+            }
             // 让相机有一个起伏的过程
             camera && (camera.position.y += Math.sin(timer) * 0.01);
             water.material.uniforms['time'].value += 1.0 / 60.0;
@@ -241,16 +288,17 @@ const Island = () => {
             const delta = clock.getDelta();
             mixers && mixers.forEach((mixer) => mixer.update(delta));
             TWEEN && TWEEN.update();
-            if (isReady) {
+            if (isReady.current) {
                 for (let point of points) {
                     // 获取2D屏幕位置
                     const screenPosition = point.position.clone();
+          // 将屏幕的点转为摄像机的点
+                    screenPosition.project(camera);
                     // 设置光线的起点和方向  比如 眼睛就是摄像机 数据和目标对象就是方向
                     raycaster.setFromCamera(screenPosition, camera);
                     // 检测场景里面所有的对象是否有视线遮挡
                     const intersects = raycaster.intersectObjects(scene.children, true);
                     //   可以将点的三维坐标转换为屏幕上的二维坐标，以便在渲染场景时将该点绘制在正确的屏幕位置上。这通常用于在屏幕上绘制交互元素、进行鼠标拾取操作或其他需要将三维坐标转换为屏幕坐标的场景处理
-                    screenPosition.project(camera);
                     if (intersects.length === 0) {
                         point.element.classList.add('visible');
                     } else {
@@ -267,6 +315,28 @@ const Island = () => {
         };
         animate();
     };
+
+      // 创建音乐
+  const createMusic = React.useCallback(() => {
+    console.log("是我执行00000")
+    const listener = new THREE.AudioListener();
+    const audio = new THREE.Audio(listener);
+    const audioLoader = new THREE.AudioLoader();    
+    audioLoader.load(audioSrc, function (buffer) {
+        audio.setBuffer(buffer);
+        audio.setLoop(true);
+        audio.setVolume(0.5);
+        if(!audio.isPlaying){
+            audio.play();
+        }
+       
+    });
+    return audio
+  },[])    
+
+
+
+
 
     return (
         <div className="island">
