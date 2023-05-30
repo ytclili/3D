@@ -1,31 +1,20 @@
 import * as THREE from '../libs/three.module';
 import CANNON from 'cannon';
 
-const setGradient = (geometry, colors, axis, reverse) => {
-    geometry.computeBoundingBox();
-    var bbox = geometry.boundingBox;
-    var size = new THREE.Vector3().subVectors(bbox.max, bbox.min);
-    var vertexIndices = ['a', 'b', 'c'];
-    var face, vertex, normalized = new THREE.Vector3(),
-        normalizedAxis = 0;
-    for (var c = 0; c < colors.length - 1; c++) {
-        var colorDiff = colors[c + 1].stop - colors[c].stop;
-        for (var i = 0; i < geometry.faces.length; i++) {
-            face = geometry.faces[i];
-            for (var v = 0; v < 3; v++) {
-                vertex = geometry.vertices[face[vertexIndices[v]]];
-                normalizedAxis = normalized.subVectors(vertex, bbox.min).divide(size)[axis];
-                if (reverse) {
-                    normalizedAxis = 1 - normalizedAxis;
-                }
-                if (normalizedAxis >= colors[c].stop && normalizedAxis <= colors[c + 1].stop) {
-                    var localNormalizedAxis = (normalizedAxis - colors[c].stop) / colorDiff;
-                    face.vertexColors[v] = colors[c].color.clone().lerp(colors[c + 1].color, localNormalizedAxis);
-                }
-            }
+const getColorFromGradient = (colorStops, value, axis) => {
+    for (let i = 0; i < colorStops.length - 1; i++) {
+        const currentStop = colorStops[i];
+        const nextStop = colorStops[i + 1];
+
+        if (value >= currentStop.stop && value <= nextStop.stop) {
+            const t = (value - currentStop.stop) / (nextStop.stop - currentStop.stop);
+            const color = new THREE.Color();
+            return color.lerpColors(currentStop.color, nextStop.color, t);
         }
     }
-}
+
+    return new THREE.Color();
+};
 
 export default class CannonHelper {
     constructor(scene) {
@@ -128,7 +117,7 @@ export default class CannonHelper {
         const material = this.currentMaterial;
         const game = this;
         let index = 0;
-        body.shapes.forEach(function (shape) {
+        body.shapes.forEach(function(shape) {
             let mesh;
             let geometry;
             let v0, v1, v2;
@@ -174,10 +163,10 @@ export default class CannonHelper {
                     break;
                 case CANNON.Shape.types.CONVEXPOLYHEDRON:
                     const geo = new THREE.Geometry();
-                    shape.vertices.forEach(function (v) {
+                    shape.vertices.forEach(function(v) {
                         geo.vertices.push(new THREE.Vector3(v.x, v.y, v.z));
                     });
-                    shape.faces.forEach(function (face) {
+                    shape.faces.forEach(function(face) {
                         const a = face[0];
                         for (let j = 1; j < face.length - 1; j++) {
                             const b = face[j];
@@ -242,6 +231,9 @@ export default class CannonHelper {
                                 colors.push(color.r, color.g, color.b);
                                 colors.push(color.r, color.g, color.b);
                                 colors.push(color.r, color.g, color.b);
+                                // colors.push(241, 39, 17);
+                                // colors.push(245, 175, 25);
+                                // colors.push(5, 49, 5);
                             }
                         }
                     }
@@ -253,8 +245,12 @@ export default class CannonHelper {
                     geometry.computeBoundingSphere();
                     geometry.computeVertexNormals();
 
+                    // 先这样吧 使用固定的颜色 后续再看动态设置吧
                     mesh = new THREE.Mesh(geometry, new THREE.MeshLambertMaterial({
-                        vertexColors: THREE.VertexColors,
+                        // 这里颜色怎么设置呀
+                        color: 0x0f5680,
+                        emissive: 0x072534,
+                        // vertexColors: THREE.VertexColors,
                         wireframe: false
                     }));
                     break;
@@ -285,7 +281,7 @@ export default class CannonHelper {
             }
             mesh.receiveShadow = receiveShadow;
             mesh.castShadow = castShadow;
-            mesh.traverse(function (child) {
+            mesh.traverse(function(child) {
                 if (child.isMesh) {
                     child.castShadow = castShadow;
                     child.receiveShadow = receiveShadow;
@@ -300,7 +296,7 @@ export default class CannonHelper {
         return obj;
     }
     updateBodies(world) {
-        world.bodies.forEach(function (body) {
+        world.bodies.forEach(function(body) {
             if (body.threemesh !== undefined) {
                 body.threemesh.position.copy(body.position);
                 body.threemesh.quaternion.copy(body.quaternion);

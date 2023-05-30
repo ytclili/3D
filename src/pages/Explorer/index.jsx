@@ -34,7 +34,7 @@ const Explorer = () => {
 
         const scene = new THREE.Scene();
         // 背景设置成了黑色 地形图开始也没有颜色导致看不见地形图了
-        // scene.background = new THREE.Color(0x000000);
+        scene.background = new THREE.Color(0x000000);
 
         const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100000);
         camera.position.set(0, 10, 10);
@@ -44,7 +44,7 @@ const Explorer = () => {
         controls.enableDamping = true;
 
         // 环境光
-        const ambientLight = new THREE.AmbientLight(0xffffff, .4);
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
         scene.add(ambientLight);
 
         const dirLight = new THREE.DirectionalLight(0xffffff, 1);
@@ -57,12 +57,12 @@ const Explorer = () => {
         world.broadphase = new CANNON.SAPBroadphase(world);
         world.gravity.set(0, -10, 0);
         world.defaultContactMaterial.friction = 0;
-        const groundMaterial = new CANNON.Material("groundMaterial");
-        const wheelMaterial = new CANNON.Material("wheelMaterial");
+        const groundMaterial = new CANNON.Material('groundMaterial');
+        const wheelMaterial = new CANNON.Material('wheelMaterial');
         const wheelGroundContactMaterial = new CANNON.ContactMaterial(wheelMaterial, groundMaterial, {
-          friction: 0,
-          restitution: 0,
-          contactEquationStiffness: 1000
+            friction: 0,
+            restitution: 0,
+            contactEquationStiffness: 1000,
         });
         // 给世界添加 contactMaterial
         world.addContactMaterial(wheelGroundContactMaterial);
@@ -93,45 +93,45 @@ const Explorer = () => {
         );
         scene.add(sparks);
 
-      
-    
-
         // 地形
-        let sizeX = 128, sizeY = 128, minHeight = 0, maxHeight = 60, check = null;
+        let sizeX = 128,
+            sizeY = 128,
+            minHeight = 0,
+            maxHeight = 60,
+            check = null;
         Promise.all([img2matrix.fromUrl(heightMapImage, sizeX, sizeY, minHeight, maxHeight)()]).then((res) => {
-            let material = res[0]
-            const terrainShape = new CANNON.Heightfield(material, {elementSize: 10});
+            let material = res[0];
+            const terrainShape = new CANNON.Heightfield(material, { elementSize: 10 });
             const terrainBody = new CANNON.Body({ mass: 0 });
             terrainBody.addShape(terrainShape);
-            terrainBody.position.set(-sizeX * terrainShape.elementSize / 2, -10, sizeY * terrainShape.elementSize / 2);
+            terrainBody.position.set((-sizeX * terrainShape.elementSize) / 2, -10, (sizeY * terrainShape.elementSize) / 2);
             terrainBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2);
             // 把图转为刚体 添加到世界中
             world.add(terrainBody);
             cannonHelper.addVisual(terrainBody, 'landscape');
             let raycastHelperGeometry = new THREE.CylinderGeometry(0, 1, 5, 1.5);
-      raycastHelperGeometry.translate(0, 0, 0);
-      raycastHelperGeometry.rotateX(Math.PI / 2);
-      var raycastHelperMesh = new THREE.Mesh(raycastHelperGeometry, new THREE.MeshNormalMaterial());
-      scene.add(raycastHelperMesh);
-      check = () => {
-        var raycaster = new THREE.Raycaster(target.position, new THREE.Vector3(0, -1, 0));
-        var intersects = raycaster.intersectObject(terrainBody.threemesh.children[0]);
-        if (intersects.length > 0) {
-          raycastHelperMesh.position.set(0, 0, 0);
-          raycastHelperMesh.lookAt(intersects[0].face.normal);
-          raycastHelperMesh.position.copy(intersects[0].point);
-        }
-        // 将模型放置在地形上
-        target.position.y = intersects && intersects[0] ? intersects[0].point.y + 0.1 : 30;
-        // 标志基地
-        var raycaster2 = new THREE.Raycaster(shelterLocation.position, new THREE.Vector3(0, -1, 0));
-        var intersects2 = raycaster2.intersectObject(terrainBody.threemesh.children[0]);
-        shelterLocation.position.y = intersects2 && intersects2[0] ? intersects2[0].point.y + .5 : 30;
-        shelterLight.position.y = shelterLocation.position.y + 50;
-        shelterLight.position.x = shelterLocation.position.x + 5
-        shelterLight.position.z = shelterLocation.position.z;
-      }
-
+            raycastHelperGeometry.translate(0, 0, 0);
+            raycastHelperGeometry.rotateX(Math.PI / 2);
+            var raycastHelperMesh = new THREE.Mesh(raycastHelperGeometry, new THREE.MeshNormalMaterial());
+            scene.add(raycastHelperMesh);
+            check = () => {
+                var raycaster = new THREE.Raycaster(target.position, new THREE.Vector3(0, -1, 0));
+                var intersects = raycaster.intersectObject(terrainBody.threemesh.children[0]);
+                if (intersects.length > 0) {
+                    raycastHelperMesh.position.set(0, 0, 0);
+                    raycastHelperMesh.lookAt(intersects[0].face.normal);
+                    raycastHelperMesh.position.copy(intersects[0].point);
+                }
+                // 将模型放置在地形上
+                target.position.y = intersects && intersects[0] ? intersects[0].point.y + 0.1 : 30;
+                // 标志基地
+                var raycaster2 = new THREE.Raycaster(shelterLocation.position, new THREE.Vector3(0, -1, 0));
+                var intersects2 = raycaster2.intersectObject(terrainBody.threemesh.children[0]);
+                shelterLocation.position.y = intersects2 && intersects2[0] ? intersects2[0].point.y + 0.5 : 30;
+                shelterLight.position.y = shelterLocation.position.y + 50;
+                shelterLight.position.x = shelterLocation.position.x + 5;
+                shelterLight.position.z = shelterLocation.position.z;
+            };
         });
 
         // 基地
@@ -178,7 +178,7 @@ const Explorer = () => {
         );
         scene.add(target);
 
-        var directionalLight = new THREE.DirectionalLight(new THREE.Color(0xffffff), .5);
+        var directionalLight = new THREE.DirectionalLight(new THREE.Color(0xffffff), 0.5);
         directionalLight.position.set(0, 1, 0);
         directionalLight.castShadow = true;
         directionalLight.target = target;
@@ -246,12 +246,10 @@ const Explorer = () => {
 
         const updateCamera = () => {
             if (followCamera) {
-              camera.position.lerp(followCamera.getWorldPosition(new THREE.Vector3()), 0.1);
-              camera.lookAt(target.position.x, target.position.y + .5, target.position.z);
+                camera.position.lerp(followCamera.getWorldPosition(new THREE.Vector3()), 0.1);
+                camera.lookAt(target.position.x, target.position.y + 0.5, target.position.z);
             }
-          }
-
-
+        };
 
         window.addEventListener('resize', () => {
             renderer.setSize(window.innerWidth, window.innerHeight);
@@ -268,14 +266,13 @@ const Explorer = () => {
             mixers && mixers.forEach((mixer) => mixer.update(clock.getDelta()));
             updateDrive();
             let now = Date.now();
-      lastTime === undefined && (lastTime = now);
-      let dt = (Date.now() - lastTime) / 1000.0;
-      lastTime = now;
+            lastTime === undefined && (lastTime = now);
+            let dt = (Date.now() - lastTime) / 1000.0;
+            lastTime = now;
             world.step(fixedTimeStep, dt);
             cannonHelper.updateBodies(world);
             // updateCamera()
             check && check();
-
         }
         animation();
     };
