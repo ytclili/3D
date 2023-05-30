@@ -1,37 +1,6 @@
 import * as THREE from '../libs/three.module';
 import CANNON from 'cannon';
 
-
-function getColorFromGradient(colorStops, position, axis) {
-    // 根据位置值和轴向确定需要插值的属性
-    const propName = axis.toLowerCase();
-
-    // 根据位置值在渐变配置中找到对应的颜色范围
-    let lowerStop, upperStop;
-    for (let i = 0; i < colorStops.length - 1; i++) {
-        const currStop = colorStops[i];
-        const nextStop = colorStops[i + 1];
-        if (position >= currStop.stop && position <= nextStop.stop) {
-            lowerStop = currStop;
-            upperStop = nextStop;
-            break;
-        }
-    }
-
-    // 如果未找到颜色范围，则返回默认颜色
-    if (!lowerStop || !upperStop) {
-        return new THREE.Color();
-    }
-
-    // 根据位置值在颜色范围内进行插值计算
-    const range = upperStop.stop - lowerStop.stop;
-    const t = (position - lowerStop.stop) / range;
-    const color = new THREE.Color();
-    color.copy(lowerStop.color).lerp(upperStop.color, t);
-
-    return color;
-}
-
 const setGradient = (geometry, colors, axis, reverse) => {
     geometry.computeBoundingBox();
     var bbox = geometry.boundingBox;
@@ -159,7 +128,7 @@ export default class CannonHelper {
         const material = this.currentMaterial;
         const game = this;
         let index = 0;
-        body.shapes.forEach(function(shape) {
+        body.shapes.forEach(function (shape) {
             let mesh;
             let geometry;
             let v0, v1, v2;
@@ -205,10 +174,10 @@ export default class CannonHelper {
                     break;
                 case CANNON.Shape.types.CONVEXPOLYHEDRON:
                     const geo = new THREE.Geometry();
-                    shape.vertices.forEach(function(v) {
+                    shape.vertices.forEach(function (v) {
                         geo.vertices.push(new THREE.Vector3(v.x, v.y, v.z));
                     });
-                    shape.faces.forEach(function(face) {
+                    shape.faces.forEach(function (face) {
                         const a = face[0];
                         for (let j = 1; j < face.length - 1; j++) {
                             const b = face[j];
@@ -247,9 +216,9 @@ export default class CannonHelper {
                         }
                     ];
 
-                    const v0 = new CANNON.Vec3();
-                    const v1 = new CANNON.Vec3();
-                    const v2 = new CANNON.Vec3();
+                    v0 = new CANNON.Vec3();
+                    v1 = new CANNON.Vec3();
+                    v2 = new CANNON.Vec3();
 
                     for (let xi = 0; xi < shape.data.length - 1; xi++) {
                         for (let yi = 0; yi < shape.data[xi].length - 1; yi++) {
@@ -280,6 +249,9 @@ export default class CannonHelper {
                     geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
                     geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
                     geometry.setIndex(indices);
+
+                    geometry.computeBoundingSphere();
+                    geometry.computeVertexNormals();
 
                     mesh = new THREE.Mesh(geometry, new THREE.MeshLambertMaterial({
                         vertexColors: THREE.VertexColors,
@@ -313,7 +285,7 @@ export default class CannonHelper {
             }
             mesh.receiveShadow = receiveShadow;
             mesh.castShadow = castShadow;
-            mesh.traverse(function(child) {
+            mesh.traverse(function (child) {
                 if (child.isMesh) {
                     child.castShadow = castShadow;
                     child.receiveShadow = receiveShadow;
@@ -328,7 +300,7 @@ export default class CannonHelper {
         return obj;
     }
     updateBodies(world) {
-        world.bodies.forEach(function(body) {
+        world.bodies.forEach(function (body) {
             if (body.threemesh !== undefined) {
                 body.threemesh.position.copy(body.position);
                 body.threemesh.quaternion.copy(body.quaternion);
