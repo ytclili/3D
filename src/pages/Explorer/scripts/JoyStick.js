@@ -1,3 +1,4 @@
+const touchEnabled = !!('ontouchstart' in window)
 export default class JoyStick {
     constructor(props) {
         const circle = document.createElement('div');
@@ -40,7 +41,7 @@ export default class JoyStick {
         this.moveDamping = props.moveDamping || 0.01;
         if (this.domElement !== undefined) {
             const joystick = this;
-            if ('ontouchstart' in window) {
+            if (touchEnabled) {
                 this.domElement.addEventListener('touchstart', function(event) {
                     joystick.tap(event);
                 });
@@ -66,7 +67,7 @@ export default class JoyStick {
         //获取鼠标开始位置
         this.offset = this.getMousePosition(event);
         const joystick = this;
-        if ('ontouchstart' in window) {
+        if (touchEnabled) {
             document.ontouchmove = function(event) {
                 joystick.move(event);
             };
