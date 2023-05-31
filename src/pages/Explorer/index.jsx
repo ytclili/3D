@@ -36,12 +36,19 @@ const Explorer = () => {
         // 背景设置成了黑色 地形图开始也没有颜色导致看不见地形图了
         scene.background = new THREE.Color(0x000000);
 
-        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100000);
-        camera.position.set(0, 10, 10);
-        scene.add(camera);
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.01, 100000);
+        camera.position.set(1, 1, -1);
+        // camera.lookAt(scene.position)
+        // scene.add(camera);
 
-        const controls = new OrbitControls(camera, renderer.domElement);
-        controls.enableDamping = true;
+        // 创建辅助坐标系 
+        const axesHelper = new THREE.AxesHelper(1000);
+        scene.add(axesHelper);
+        
+        // 第三人称视角控制器导致方向不对
+        // const controls = new OrbitControls(camera, renderer.domElement);
+        // controls.enableDamping = true;
+       
 
         // 环境光
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
@@ -67,105 +74,7 @@ const Explorer = () => {
         // 给世界添加 contactMaterial
         world.addContactMaterial(wheelGroundContactMaterial);
 
-        // 星空粒子
-        const textureloader = new THREE.TextureLoader();
-        const imgsrc = textureloader.load(snowflakeTexture);
-        const shaderPoint = THREE.ShaderLib.points;
-        const uniforms = THREE.UniformsUtils.clone(shaderPoint.uniforms);
-        uniforms.map.value = imgsrc;
-        const sparkGeometry = new THREE.BufferGeometry();
-        const sparkVertices = [];
-        for (let i = 0; i < 1000; i++) {
-            sparkVertices.push(randnum(-500, 500), randnum(30, 40), randnum(-500, 500));
-        }
-        sparkGeometry.setAttribute('position', new THREE.Float32BufferAttribute(sparkVertices, 3));
-        const sparks = new THREE.Points(
-            sparkGeometry,
-            new THREE.PointsMaterial({
-                size: 2,
-                color: new THREE.Color(0xffffff),
-                map: uniforms.map.value,
-                blending: THREE.AdditiveBlending,
-                depthWrite: false,
-                transparent: true,
-                opacity: 0.75,
-            }),
-        );
-        scene.add(sparks);
-
-        // 地形
-        let sizeX = 128,
-            sizeY = 128,
-            minHeight = 0,
-            maxHeight = 60,
-            check = null;
-        Promise.all([img2matrix.fromUrl(heightMapImage, sizeX, sizeY, minHeight, maxHeight)()]).then((res) => {
-            let material = res[0];
-            const terrainShape = new CANNON.Heightfield(material, { elementSize: 10 });
-            const terrainBody = new CANNON.Body({ mass: 0 });
-            terrainBody.addShape(terrainShape);
-            terrainBody.position.set((-sizeX * terrainShape.elementSize) / 2, -10, (sizeY * terrainShape.elementSize) / 2);
-            terrainBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2);
-            // 把图转为刚体 添加到世界中
-            world.add(terrainBody);
-            cannonHelper.addVisual(terrainBody, 'landscape');
-            let raycastHelperGeometry = new THREE.CylinderGeometry(0, 1, 5, 1.5);
-            raycastHelperGeometry.translate(0, 0, 0);
-            raycastHelperGeometry.rotateX(Math.PI / 2);
-            var raycastHelperMesh = new THREE.Mesh(raycastHelperGeometry, new THREE.MeshNormalMaterial());
-            scene.add(raycastHelperMesh);
-            check = () => {
-                var raycaster = new THREE.Raycaster(target.position, new THREE.Vector3(0, -1, 0));
-                var intersects = raycaster.intersectObject(terrainBody.threemesh.children[0]);
-                if (intersects.length > 0) {
-                    raycastHelperMesh.position.set(0, 0, 0);
-                    raycastHelperMesh.lookAt(intersects[0].face.normal);
-                    raycastHelperMesh.position.copy(intersects[0].point);
-                }
-                // 将模型放置在地形上
-                target.position.y = intersects && intersects[0] ? intersects[0].point.y + 0.1 : 30;
-                // 标志基地
-                var raycaster2 = new THREE.Raycaster(shelterLocation.position, new THREE.Vector3(0, -1, 0));
-                var intersects2 = raycaster2.intersectObject(terrainBody.threemesh.children[0]);
-                shelterLocation.position.y = intersects2 && intersects2[0] ? intersects2[0].point.y + 0.5 : 30;
-                shelterLight.position.y = shelterLocation.position.y + 50;
-                shelterLight.position.x = shelterLocation.position.x + 5;
-                shelterLight.position.z = shelterLocation.position.z;
-            };
-        });
-
-        // 基地
-        const gltfLoader = new GLTFLoader();
-        const shelterGeometry = new THREE.BoxGeometry(0.15, 2, 0.15);
-        shelterGeometry.translate(0, 1, 0); // 移动几何体的位置
-        const shelterLocation = new THREE.Mesh(
-            shelterGeometry,
-            new THREE.MeshNormalMaterial({
-                transparent: true,
-                opacity: 0,
-            }),
-        );
-        shelterLocation.position.set(shelterPosition.x, shelterPosition.y, shelterPosition.z);
-        shelterLocation.rotateY(Math.PI);
-        scene.add(shelterLocation);
-        gltfLoader.load(Shelter, (mesh) => {
-            mesh.scene.traverse((child) => {
-                child.castShadow = true;
-            });
-            mesh.scene.scale.set(50, 50, 50);
-            scene.add(mesh.scene);
-            shelterLocation.add(mesh.scene);
-        });
-        // 基地点光源
-        var shelterPointLight = new THREE.PointLight(0x1089ff, 2);
-        shelterPointLight.position.set(0, 0, 0);
-        shelterLocation.add(shelterPointLight);
-        var shelterLight = new THREE.DirectionalLight(0xffffff, 0);
-        shelterLight.position.set(0, 0, 0);
-        shelterLight.castShadow = true;
-        shelterLight.target = shelterLocation;
-        scene.add(shelterLight);
-
+     
         // target 有啥用？
         var geometry = new THREE.BoxGeometry(0.5, 1, 0.5);
         geometry.translate(0, 0.5, 0);
@@ -178,6 +87,107 @@ const Explorer = () => {
         );
         scene.add(target);
 
+           // 星空粒子
+           const textureloader = new THREE.TextureLoader();
+           const imgsrc = textureloader.load(snowflakeTexture);
+           const shaderPoint = THREE.ShaderLib.points;
+           const uniforms = THREE.UniformsUtils.clone(shaderPoint.uniforms);
+           uniforms.map.value = imgsrc;
+           const sparkGeometry = new THREE.BufferGeometry();
+           const sparkVertices = [];
+           for (let i = 0; i < 1000; i++) {
+               sparkVertices.push(randnum(-500, 500), randnum(30, 40), randnum(-500, 500));
+           }
+           sparkGeometry.setAttribute('position', new THREE.Float32BufferAttribute(sparkVertices, 3));
+           const sparks = new THREE.Points(
+               sparkGeometry,
+               new THREE.PointsMaterial({
+                   size: 2,
+                   color: new THREE.Color(0xffffff),
+                   map: uniforms.map.value,
+                   blending: THREE.AdditiveBlending,
+                   depthWrite: false,
+                   transparent: true,
+                   opacity: 0.75,
+               }),
+           );
+           scene.add(sparks);
+   
+           // 地形
+           let sizeX = 128,
+               sizeY = 128,
+               minHeight = 0,
+               maxHeight = 60,
+               check = null;
+           Promise.all([img2matrix.fromUrl(heightMapImage, sizeX, sizeY, minHeight, maxHeight)()]).then((res) => {
+               let material = res[0];
+               const terrainShape = new CANNON.Heightfield(material, { elementSize: 10 });
+               const terrainBody = new CANNON.Body({ mass: 0 });
+               terrainBody.addShape(terrainShape);
+               terrainBody.position.set((-sizeX * terrainShape.elementSize) / 2, -10, (sizeY * terrainShape.elementSize) / 2);
+               terrainBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2);
+               // 把图转为刚体 添加到世界中
+               world.add(terrainBody);
+               cannonHelper.addVisual(terrainBody, 'landscape');
+               let raycastHelperGeometry = new THREE.CylinderGeometry(0, 1, 5, 1.5);
+               raycastHelperGeometry.translate(0, 0, 0);
+               raycastHelperGeometry.rotateX(Math.PI / 2);
+               var raycastHelperMesh = new THREE.Mesh(raycastHelperGeometry, new THREE.MeshNormalMaterial());
+               scene.add(raycastHelperMesh);
+               check = () => {
+                   var raycaster = new THREE.Raycaster(target.position, new THREE.Vector3(0, -1, 0));
+                   var intersects = raycaster.intersectObject(terrainBody.threemesh.children[0]);
+                   if (intersects.length > 0) {
+                       raycastHelperMesh.position.set(0, 0, 0);
+                       raycastHelperMesh.lookAt(intersects[0].face.normal);
+                       raycastHelperMesh.position.copy(intersects[0].point);
+                   }
+                   // 将模型放置在地形上
+                   target.position.y = intersects && intersects[0] ? intersects[0].point.y + 0.1 : 30;
+                   // 标志基地
+                   var raycaster2 = new THREE.Raycaster(shelterLocation.position, new THREE.Vector3(0, -1, 0));
+                   var intersects2 = raycaster2.intersectObject(terrainBody.threemesh.children[0]);
+                   shelterLocation.position.y = intersects2 && intersects2[0] ? intersects2[0].point.y + 0.5 : 30;
+                   shelterLight.position.y = shelterLocation.position.y + 50;
+                   shelterLight.position.x = shelterLocation.position.x + 5;
+                   shelterLight.position.z = shelterLocation.position.z;
+               };
+           });
+   
+           // 基地
+           const gltfLoader = new GLTFLoader();
+           const shelterGeometry = new THREE.BoxGeometry(0.15, 2, 0.15);
+           shelterGeometry.translate(0, 1, 0); // 移动几何体的位置
+           const shelterLocation = new THREE.Mesh(
+               shelterGeometry,
+               new THREE.MeshNormalMaterial({
+                   transparent: true,
+                   opacity: 0,
+               }),
+           );
+           shelterLocation.position.set(shelterPosition.x, shelterPosition.y, shelterPosition.z);
+           shelterLocation.rotateY(Math.PI);
+           scene.add(shelterLocation);
+           gltfLoader.load(Shelter, (mesh) => {
+               mesh.scene.traverse((child) => {
+                   child.castShadow = true;
+               });
+               mesh.scene.scale.set(50, 50, 50);
+               mesh.scene.position.y = -0.5
+               scene.add(mesh.scene);
+               shelterLocation.add(mesh.scene);
+           });
+           // 基地点光源
+           var shelterPointLight = new THREE.PointLight(0x1089ff, 2);
+           shelterPointLight.position.set(0, 0, 0);
+           shelterLocation.add(shelterPointLight);
+           var shelterLight = new THREE.DirectionalLight(0xffffff, 0);
+           shelterLight.position.set(0, 0, 0);
+           shelterLight.castShadow = true;
+           shelterLight.target = shelterLocation;
+           scene.add(shelterLight);
+   
+
         var directionalLight = new THREE.DirectionalLight(new THREE.Color(0xffffff), 0.5);
         directionalLight.position.set(0, 1, 0);
         directionalLight.castShadow = true;
@@ -188,17 +198,17 @@ const Explorer = () => {
         let mixers = [],
             clip1,
             clip2;
-        const foxLoader = gltfLoader.load(foxModel, (mesh) => {
-            scene.add(mesh.scene);
+       gltfLoader.load(foxModel, (mesh) => {
             mesh.scene.traverse((child) => {
                 if (child.isMesh) {
                     child.castShadow = true;
                     child.material.side = THREE.DoubleSide;
                 }
             });
+
             let player = mesh.scene;
             player.position.set(playPosition.x, playPosition.y, playPosition.z);
-            player.scale.set(0.08, 0.08, 0.08);
+            player.scale.set(0.008, 0.008, 0.008);
             target.add(player);
             var mixer = new THREE.AnimationMixer(player);
             clip1 = mixer.clipAction(mesh.animations[0]);
@@ -241,6 +251,7 @@ const Explorer = () => {
 
         const followCamera = new THREE.Object3D();
         followCamera.position.copy(camera.position);
+        console.log(followCamera.position)
         scene.add(followCamera);
         followCamera.parent = target;
 
@@ -261,7 +272,7 @@ const Explorer = () => {
         let lastTime;
         function animation() {
             requestAnimationFrame(animation);
-            controls.update();
+            // controls.update();
             renderer.render(scene, camera);
             mixers && mixers.forEach((mixer) => mixer.update(clock.getDelta()));
             updateDrive();
@@ -271,7 +282,7 @@ const Explorer = () => {
             lastTime = now;
             world.step(fixedTimeStep, dt);
             cannonHelper.updateBodies(world);
-            // updateCamera()
+            updateCamera();
             check && check();
         }
         animation();
