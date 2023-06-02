@@ -48,8 +48,8 @@ const Explorer = () => {
         scene.add(axesHelper);
 
         // 第三人称视角控制器导致方向不对
-        // const controls = new OrbitControls(camera, renderer.domElement);
-        // controls.enableDamping = true;
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
 
         // 环境光
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
@@ -330,7 +330,7 @@ const Explorer = () => {
         let lastTime;
         function animation() {
             requestAnimationFrame(animation);
-            // controls.update();
+            controls.update();
             renderer.render(scene, camera);
             mixers && mixers.forEach((mixer) => mixer.update(clock.getDelta()));
             updateDrive();
