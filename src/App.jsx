@@ -3,6 +3,7 @@ import Olympic from './pages/Olympic/index';
 import Island from './pages/Island/index';
 import Explorer from './pages/Explorer';
 import Virtual from './pages/virtual';
+import WebGLVirtual from './pages/virtual - 副本';
 function App() {
     return (
         <Routes>
@@ -18,10 +19,14 @@ function App() {
                 path="/island"
                 element={<Island />}
             />
-            <Route
+             <Route
+                path="/"
+                element={<WebGLVirtual />}
+            />
+            {/* <Route
                 path="/"
                 element={<Virtual />}
-            />
+            /> */}
         </Routes>
     );
 }
