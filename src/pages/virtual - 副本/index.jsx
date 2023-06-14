@@ -4,6 +4,9 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import miKu from './models/Miku.glb';
 import heart from './models/heart.glb';
+import logo from './models/logo.glb';
+import video from './videos/demo.mp4';
+import './index.scss';
 
 const Virtual = () => {
     useEffect(() => {
@@ -65,8 +68,61 @@ const Virtual = () => {
         });
 
         modalLoader.load(heart, (gltf) => {
+            gltf.scene.traverse((child) => {
+                if (child.isMesh) {
+                    if (child.name === 'mesh_0') {
+                        child.material.metalness = 0.6;
+                        child.material.roughness = 0.4;
+                        child.material.color = new THREE.Color(0xfe3f47);
+                        child.material.emissiveIntensity = 1.6;
+                    }
+                }
+            });
+            gltf.scene.scale.set(0.05, 0.05, 0.05);
+            const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setSize(document.querySelector('.heart').offsetWidth, document.querySelector('.heart').offsetHeight);
+            document.querySelector('.heart').appendChild(renderer.domElement);
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(50, document.querySelector('.heart').offsetWidth / document.querySelector('.heart').offsetHeight, 0.1, 10000);
+            camera.position.set(0, 0, 10);
+            camera.lookAt(0, 0, 0);
+            scene.add(camera);
+            const ambientLight = new THREE.AmbientLight(0xffffff, 1);
+            scene.add(ambientLight);
+            scene.add(gltf.scene);
+
+            const animation = () => {
+                requestAnimationFrame(animation);
+                renderer.render(scene, camera);
+                gltf.scene.rotation.y += 0.04;
+            };
+            animation();
+        });
+
+        modalLoader.load(logo, (gltf) => {
+            // alpha true 透明背景
+            const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setSize(document.querySelector('.logo').offsetWidth, document.querySelector('.logo').offsetHeight);
+            document.querySelector('.logo').appendChild(renderer.domElement);
+            const scene = new THREE.Scene();
+            scene.background;
+            const camera = new THREE.PerspectiveCamera(50, document.querySelector('.logo').offsetWidth / document.querySelector('.logo').offsetHeight, 0.1, 10000);
+            camera.position.set(0, 10, 10);
+            camera.lookAt(0, 0, 0);
+            scene.add(camera);
+
             gltf.scene.scale.set(0.01, 0.01, 0.01);
             scene.add(gltf.scene);
+            const ambientLight = new THREE.AmbientLight(0xffffff, 1);
+            scene.add(ambientLight);
+            const animation = () => {
+                requestAnimationFrame(animation);
+                renderer.render(scene, camera);
+                gltf.scene.rotation.y += 0.008;
+            };
+            animation();
         });
 
         function playAnimation(animationIndex) {
@@ -110,6 +166,20 @@ const Virtual = () => {
         animation();
     }
 
-    return <div className="gpu-virtual"></div>;
+    return (
+        <div className="gpu-virtual">
+            <div className="video">
+                <video
+                    src={video}
+                    muted
+                    autoPlay
+                    loop
+                ></video>
+            </div>
+            <div className="logo"></div>
+            <div className="heart"></div>
+            <div className="miku"></div>
+        </div>
+    );
 };
 export default Virtual;
