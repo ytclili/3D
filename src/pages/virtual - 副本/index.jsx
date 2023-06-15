@@ -25,18 +25,17 @@ const Virtual = () => {
     function init() {
         clock = new THREE.Clock();
         camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 10000);
-        camera.position.set(0, 10, 10);
+        camera.position.set(0, 0, 10);
         camera.lookAt(0, 0, 0);
         scene = new THREE.Scene();
-        scene.background = new THREE.Color('lightblue');
         const spotLight = new THREE.SpotLight(0xffffff, 1);
         camera.add(spotLight);
         scene.add(camera);
-        renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setPixelRatio(window.devicePixelRatio);
         renderer.setSize(window.innerWidth, window.innerHeight);
 
-        document.body.appendChild(renderer.domElement);
+        document.querySelector('.miku').appendChild(renderer.domElement);
 
         controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
@@ -57,12 +56,15 @@ const Virtual = () => {
 
         modalLoader = new GLTFLoader();
         modalLoader.load(miKu, (gltf) => {
-            scene.add(gltf.scene);
             gltf.scene.traverse((child) => {
                 if (child.isMesh) {
                     interactableMeshes.push(child);
                 }
             });
+            gltf.scene.scale.set(5, 5, 5);
+            gltf.scene.position.set(0, -5, 0);
+            scene.add(gltf.scene);
+
             miKuModal = gltf;
             playAnimation(5);
         });
@@ -179,6 +181,44 @@ const Virtual = () => {
             <div className="logo"></div>
             <div className="heart"></div>
             <div className="miku"></div>
+            <div className="decorate">
+                <i className="live_icon">LIVE</i>
+                <div className="live_banner">
+                    <i className="icon"></i>
+                    <div className="title">
+                        <span className="text">慢直播：香港夜景是世界三大夜景之一，其中维多利亚港夜景、太平山顶夜景景色最为壮观动人。</span>
+                    </div>
+                </div>
+            </div>
+            <div className="input_zone">
+                <div className="tips">
+                    <b>1566</b>人正在看，已填装<b>8896</b>条弹幕！
+                </div>
+                {/* <input
+                            className="input"
+                            placeholder="输入“慢直播、虚拟主播、初音未来、安可、元宇宙、卡哇伊 ❤”等字样可以触发彩蛋哦！"
+                            onChange={this.handleInputChange.bind(this)}
+                            onKeyPress={this.handleInputKeypress.bind(this)}
+                            value={this.state.inputValue}
+                            variant="contained"
+                        />
+                        <button
+                            className="send_button"
+                            onClick={this.handleSend}
+                            variant="contained"
+                        >
+                            发送
+                        </button> */}
+            </div>
+            <div className="decorate">
+                <i className="live_icon">LIVE</i>
+                <div className="live_banner">
+                    <i className="icon"></i>
+                    <div className="title">
+                        <span className="text">慢直播：香港夜景是世界三大夜景之一，其中维多利亚港夜景、太平山顶夜景景色最为壮观动人。</span>
+                    </div>
+                </div>
+            </div>
         </div>
     );
 };
