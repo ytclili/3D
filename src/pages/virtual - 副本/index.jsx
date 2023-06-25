@@ -114,9 +114,17 @@ const Virtual = () => {
             camera.position.set(0, 10, 10);
             camera.lookAt(0, 0, 0);
             scene.add(camera);
+            gltf.scene.traverse((child) => {
+               if(child.isMesh){
+                child.material.metalness = .2;
+                child.material.roughness = .4;
+                child.material.color = new THREE.Color(0x00a1ff);
+               }
+            });
 
             gltf.scene.scale.set(0.01, 0.01, 0.01);
-            scene.add(gltf.scene);
+            scene.add(gltf.scene);  
+
             const ambientLight = new THREE.AmbientLight(0xffffff, 1);
             scene.add(ambientLight);
             const animation = () => {
@@ -163,7 +171,7 @@ const Virtual = () => {
         function animation() {
             requestAnimationFrame(animation);
             renderer.render(scene, camera);
-            mixer && mixer.update(clock.getDelta(clock.getDelta()));
+            mixer && mixer.update(clock.getDelta());
         }
         animation();
     }
