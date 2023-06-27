@@ -5,6 +5,7 @@ import Explorer from './pages/Explorer';
 import Virtual from './pages/virtual';
 import WebGLVirtual from './pages/virtual - 副本';
 import ComicPage from './pages/comic';
+import Shadow from './pages/shadow';
 
 function App() {
     return (
@@ -22,9 +23,14 @@ function App() {
                 element={<Island />}
             />
               <Route
-                path="/"
+                path="/comic"
                 element={<ComicPage />}
             />
+            <Route
+                path="/"
+                element={<Shadow/>}
+            >
+            </Route>
              <Route
                 path="/webGLVirtual"
                 element={<WebGLVirtual />}
