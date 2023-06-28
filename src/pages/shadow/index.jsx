@@ -60,8 +60,6 @@ const Shadow = ()=>{
             })
             scene.add(gltf.scene);
         })
-
-
     }
     
     let previousTime = 0
@@ -71,7 +69,6 @@ const Shadow = ()=>{
         event.preventDefault()
         cursor.x = event.clientX / window.innerWidth - 0.5
         cursor.y = event.clientY / window.innerHeight - 0.5
-        console.log(cursor)
         // handleCursor(event)
       }, false)
 
@@ -82,10 +79,12 @@ const Shadow = ()=>{
         TWEEN &&  TWEEN.update()
         const elapsedTime = clock.getElapsedTime()
         const deltaTime = elapsedTime - previousTime
+        previousTime = elapsedTime
         const parallaxY = cursor.y
         pointLight.position.y -= (parallaxY * 9 + pointLight.position.y - 2) * deltaTime
         const parallaxX = cursor.x
         pointLight.position.x += (parallaxX * 8 - pointLight.position.x) * 2 * deltaTime
+        console.log(pointLight.position.x,pointLight.position.y)
     }
 
 
