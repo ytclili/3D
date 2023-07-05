@@ -39,66 +39,116 @@
 
 <body>
 
-    <script>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "./three.module.js",
+                "three/addons/": "./jsm/"
+            }
+        }
+    </script>
+    <script type="module">
         import * as THREE from 'three';
-        import {
-            OrbitControls
-        } from 'three/examples/jsm/controls/OrbitControls';
-        import React, {
-            useEffect,
-            useRef,
-            useState
-        } from 'react';
+        // import {
+        //     OrbitControls
+        // } from 'three/examples/jsm/controls/OrbitControls';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    
         // import Stats from 'three/examples/jsm/libs/stats.module';
         import {
             Water
-        } from 'three/examples/jsm/objects/Water';
+        } from 'three/addons/objects/Water.js';
         import {
             Sky
-        } from 'three/examples/jsm/objects/Sky';
-        import waterTexture from './images/waternormals.jpg';
+        } from 'three/addons/objects/Sky.js';
+        // import waterTexture from './images/waternormals.jpg';
         import {
             Lensflare,
             LensflareElement
-        } from 'three/examples/jsm/objects/Lensflare.js';
-        import lensflareTexture0 from './images/lensflare0.png';
-        import lensflareTexture1 from './images/lensflare1.png';
+        } from 'three/addons/objects/Lensflare.js';
+        // import lensflareTexture0 from './images/lensflare0.png';
+        // import lensflareTexture1 from './images/lensflare1.png';
         // import islandModel from './models/island.glb';
-        import islandModel1 from './models/夏日情岛.glb';
-        import flamingoModel from './models/flamingo.glb';
-        import vertexShader from './shaders/rainbow/vertex.glsl';
-        import fragmentShader from './shaders/rainbow/fragment.glsl';
-        import * as TWEEN from '../../../node_modules/three/examples/jsm/libs/tween.module';
-        import Animations from '../../assets/utils/Animations';
+        // import islandModel1 from './models/夏日情岛.glb';
+        // import flamingoModel from './models/flamingo.glb';
+        // import vertexShader from './shaders/rainbow/vertex.glsl';
+        // import fragmentShader from './shaders/rainbow/fragment.glsl';
+        import * as TWEEN from 'three/addons/libs/tween.module.js';
+        // import Animations from '../../assets/utils/Animations';
         import {
             GLTFLoader
-        } from 'three/examples/jsm/loaders/GLTFLoader';
-        import Loading from '../../component/Loading';
+        } from 'three/addons/loaders/GLTFLoader.js';
         import {
             DRACOLoader
-        } from 'three/examples/jsm/loaders/DRACOLoader.js';
-        import audioSrc from './audio/lettingGo.ogg'
+        } from 'three/addons/loaders/DRACOLoader.js';
+        // import audioSrc from './audio/lettingGo.ogg'
 
-        import './index.scss';
+
+
+    const vertexShader = `varying vec2 vUV;
+        varying vec3 vNormal;
+        void main () {
+        vUV = uv;
+        vNormal = vec3(normal);
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }`
+
+    const fragmentShader = `varying vec2 vUV;
+        varying vec3 vNormal;
+        void main () {
+        vec4 c = vec4(abs(vNormal) + vec3(vUV, 0.0), 0.1);
+        gl_FragColor = c;
+    }`
+
+
+    const Animations = {
+    //相机移动实现漫游等动画
+    //  newP: 相机移动到的位置 newT:控制点位置
+    animateCamera: (camera, controls, newP, newT, time = 2000, callBack) => {
+        var tween = new TWEEN.Tween({
+            x1: camera.position.x, // 相机x
+            y1: camera.position.y, // 相机y
+            z1: camera.position.z, // 相机z
+            x2: controls.target.x, // 控制点的中心点x
+            y2: controls.target.y, // 控制点的中心点y
+            z2: controls.target.z, // 控制点的中心点z
+        });
+        tween.to({
+                x1: newP.x,
+                y1: newP.y,
+                z1: newP.z,
+                x2: newT.x,
+                y2: newT.y,
+                z2: newT.z,
+            },
+            time
+        );
+        tween.onUpdate(function (object) {
+            camera.position.x = object.x1;
+            camera.position.y = object.y1;
+            camera.position.z = object.z1;
+            controls.target.x = object.x2;
+            controls.target.y = object.y2;
+            controls.target.z = object.z2;
+            controls.update();
+        });
+        tween.onComplete(function () {
+            controls.enabled = true;
+            callBack();
+        });
+        tween.easing(TWEEN.Easing.Cubic.InOut);
+        tween.start();
+    },
+}
 
         const Island = () => {
-            const [loadingProcess, setLoadingProcess] = useState(0);
-            let isReady = useRef(false);
+            let isReady = false
             const mixers = [];
             const meshes = []
             const clock = new THREE.Clock();
-            useEffect(() => {
-                init();
-                // window.addEventListener('click', () => {
-                //     console.log("我执行了")
-                //    createMusic()
-
-                //   });
-            }, []);
-
             const init = () => {
                 const renderer = new THREE.WebGLRenderer({
-                    canvas: document.querySelector('canvas.canvas'),
+                    canvas: document.querySelector('canvas'),
                     antialias: true,
                 });
                 renderer.setSize(window.innerWidth, window.innerHeight);
@@ -141,8 +191,8 @@
                 pointLight.color.setHSL(0.995, 0.5, 0.9);
                 pointLight.position.set(0, 45, -2000);
                 const textureLoader = new THREE.TextureLoader();
-                const textureFlare0 = textureLoader.load(lensflareTexture0);
-                const textureFlare1 = textureLoader.load(lensflareTexture1);
+                const textureFlare0 = textureLoader.load('./images/lensflare0.png');
+                const textureFlare1 = textureLoader.load('./images/lensflare1.png');
                 //镜头光晕
                 const lensflare = new Lensflare();
                 lensflare.addElement(new LensflareElement(textureFlare0, 600, 0, pointLight.color));
@@ -156,30 +206,29 @@
                 const manage = new THREE.LoadingManager();
                 manage.onProgress = async (url, loaded, total) => {
                     if (Math.floor((loaded / total) * 100) === 100) {
-                        setLoadingProcess(Math.floor((loaded / total) * 100));
                         Animations.animateCamera(camera, controls, new THREE.Vector3(0, 40, 140), {
                             x: 0,
                             y: 0,
                             z: 0
                         }, 4000, () => {
-                            isReady.current = true;
+                            isReady = true;
 
                         });
 
                     } else {
-                        setLoadingProcess(Math.floor((loaded / total) * 100));
+                        // 
                     }
                 };
 
                 let money = null;
                 // 使用 dracoLoader 加载用blender压缩过的模型
                 const dracoLoader = new DRACOLoader();
-                dracoLoader.setDecoderPath('libs/draco/');
+                dracoLoader.setDecoderPath('./libs/draco/');
                 // 岛屿
                 const loader = new GLTFLoader(manage);
                 loader.setDRACOLoader(dracoLoader);
                 // blender进行了压缩 用dracoLoader加载解压
-                loader.load(islandModel1, (mesh) => {
+                loader.load('./models/夏日情岛.glb', (mesh) => {
                     mesh.scene.traverse((child) => {
                         meshes.push(child)
                         if (child.name === "金币") {
@@ -200,7 +249,7 @@
                 const water = new Water(oceanGeometry, {
                     textureWidth: 512,
                     textureHeight: 512,
-                    waterNormals: new THREE.TextureLoader().load(waterTexture, function(texture) {
+                    waterNormals: new THREE.TextureLoader().load('./images/waternormals.jpg', function(texture) {
                         texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
                     }),
                     sunDirection: new THREE.Vector3(),
@@ -250,7 +299,7 @@
                 scene.add(rainbow);
 
                 // 鸟
-                loader.load(flamingoModel, (mesh) => {
+                loader.load('./models/flamingo.glb', (mesh) => {
                     mesh.scene.scale.set(0.35, 0.35, 0.35);
                     mesh.scene.position.set(-100, 80, -300);
                     scene.add(mesh.scene);
@@ -290,9 +339,10 @@
                     },
                 ];
 
-                document.querySelectorAll('.point').forEach((point, index) => {
+                document.addEventListener("DOMContentLoaded",()=>{
+                    document.querySelectorAll('.point').forEach((point, index) => {
                     point.addEventListener('click', (event) => {
-                        let className = event.target.classList[event.target.classList.length - 1];
+                        let className = event?.target?.classList[event.target.classList.length - 1];
                         switch (className) {
                             case 'label-0':
                                 return Animations.animateCamera(camera, controls, new THREE.Vector3(-15, 86, 60), new THREE.Vector3(0, 0, 0), 1000, () => {});
@@ -308,6 +358,7 @@
                     });
                     event.stopPropagation();
                 });
+                })
 
                 const mouse = new THREE.Vector2();
                 const mouseClick = () => {
@@ -319,7 +370,7 @@
                         if (intersects[0].object.name) {
                             console.log(intersects[0].object.name)
                             if (intersects[0].object.name === "播放") {
-                                createMusic()
+                                // createMusic()
                             }
                         }
                     }
@@ -350,7 +401,7 @@
                     const delta = clock.getDelta();
                     mixers && mixers.forEach((mixer) => mixer.update(delta));
                     TWEEN && TWEEN.update();
-                    if (isReady.current) {
+                    if (isReady) {
                         for (let point of points) {
                             // 获取2D屏幕位置
                             const screenPosition = point.position.clone();
@@ -379,29 +430,24 @@
             };
 
             // 创建音乐
-            const createMusic = React.useCallback(() => {
-                console.log("是我执行00000")
-                const listener = new THREE.AudioListener();
-                const audio = new THREE.Audio(listener);
-                const audioLoader = new THREE.AudioLoader();
-                audioLoader.load(audioSrc, function(buffer) {
-                    audio.setBuffer(buffer);
-                    audio.setLoop(true);
-                    audio.setVolume(0.5);
-                    if (!audio.isPlaying) {
-                        audio.play();
-                    }
+            // const createMusic = () => {
+            //     const listener = new THREE.AudioListener();
+            //     const audio = new THREE.Audio(listener);
+            //     const audioLoader = new THREE.AudioLoader();
+            //     audioLoader.load(audioSrc, function(buffer) {
+            //         audio.setBuffer(buffer);
+            //         audio.setLoop(true);
+            //         audio.setVolume(0.5);
+            //         if (!audio.isPlaying) {
+            //             audio.play();
+            //         }
 
-                });
-                return audio
-            }, [])
-
-
-
-
-
-
+            //     });
+            //     return audio
+            // }
+            init();
         };
+        Island()
     </script>
 </body>
 
