@@ -34,7 +34,7 @@ http.createServer(function (req, res) {
 handler.on("*", (event) => {
     console.log(event, "event")
     run_cmd("sh", ['./deploy.sh'], (txt) => {
-        console.log(txt)
+        console.log(txt, "txt")
     })
 })
 
