@@ -10,11 +10,14 @@ const handler = createHandler({
 
 function run_cmd(cmd, args, callback) {
     const child = spawn(cmd, args)
+    console.log("[[[[[[[[[[[")
     let resp = ""
     child.stdout.on("data", (buffer) => {
+        console.log("1111111111111111")
         resp += buffer.toString()
     })
     child.stdout.on("end", () => {
+        console.log("0000000000000000000000999999999")
         callback(resp)
     })
 }
