@@ -8,6 +8,8 @@ echo "pulling is complete ==========>>>>>>>>>>"
 echo "Removing all Docker containers and images..."
 
 docker stop my-page-3d
+# docker rm $(docker ps -aq --filter "name=my-page-3d") || true
+docker rm my-page-3d
 
 docker system prune --all --force
 
