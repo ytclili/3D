@@ -7,8 +7,10 @@ wait # 等待上一个命令完成
 echo "pulling is complete ==========>>>>>>>>>>"
 echo "Removing all Docker containers and images..."
 
+# 停止上一次的container
 docker stop my-page-3d
 # docker rm $(docker ps -aq --filter "name=my-page-3d") || true
+# 删除images
 docker rm my-page-3d
 
 docker system prune --all --force
