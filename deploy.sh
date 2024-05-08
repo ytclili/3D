@@ -3,7 +3,8 @@ echo "Deploy Project"
 
 echo "Pulling latest changes from Git..."
 git pull
-
+wait # 等待上一个命令完成
+echo "pulling is complete ==========>>>>>>>>>>"
 echo "Removing all Docker containers and images..."
 docker system prune --all --force
 
